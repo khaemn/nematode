@@ -6,5 +6,6 @@
         <file>ship.png</file>
         <file>Cannon.qml</file>
         <file>cannon.png</file>
+        <file>RouteCanvas.qml</file>
     </qresource>
 </RCC>

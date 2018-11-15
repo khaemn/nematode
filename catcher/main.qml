@@ -1,6 +1,5 @@
 import QtQuick 2.5
 import QtQuick.Controls 1.4
-import QtQuick.Layouts 1.2
 
 ApplicationWindow {
     id: root
@@ -9,55 +8,175 @@ ApplicationWindow {
     width: 800
     height: 200
     title: qsTr("Nematode")
+    color: "darkgrey"
 
     readonly property int _zoneWidth: 100
+    readonly property int animationInterval: 300
+
+    readonly property var engine: gameEngine // context property
 
     function init() {
-
+        // TODO: impl!
     }
 
-    MouseArea {
-        id: _area
+    Item {
+        id: _playground
 
-        anchors.fill: parent
-    }
-
-    Rectangle {
-        id: _launchBay
-
-        // TODO: reanchor to a center point or given rect coords.
+        anchors.top: parent.top
         anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-
-        width: _zoneWidth
-
-        color: "blue"
-    }
-
-    Rectangle {
-        id: _landingZone
-
-        // TODO: reanchor to a center point or given rect coords.
         anchors.right: parent.right
-        anchors.top: parent.top
+
+        anchors.bottom: _toolbar.top
+
+        Rectangle {
+            id: _launchBay
+
+            // TODO: reanchor to a center point or given rect coords.
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+
+            width: _zoneWidth
+
+            color: "blue"
+        }
+
+        Rectangle {
+            id: _landingZone
+
+            // TODO: reanchor to a center point or given rect coords.
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+
+            width: _zoneWidth
+
+            color: "red"
+        }
+
+        RouteCanvas {
+            id: _canvas
+        }
+
+        MouseArea {
+            id: _area
+
+            property int inputDivider: 0
+            property int inputDividerThreshold: 5
+
+            property bool isEditingInProgress: false
+
+            anchors.fill: parent
+
+            onPositionChanged: {
+                if (!isEditingInProgress) {
+                    // Making immediate reaction on the first move.
+                    isEditingInProgress = true;
+                    inputDivider = inputDividerThreshold;
+                }
+
+                if (++inputDivider < inputDividerThreshold) {
+                    return;
+                }
+                inputDivider = 0;
+                _canvas.doAction("line", mouseX, mouseY);
+                console.log(mouseX, mouseY);
+                engine.addRoutePoint(mouseX, mouseY);
+            }
+
+            onCanceled: pressed
+
+            onPressed: { _canvas.doAction("clear"); }
+
+            onReleased: {
+                isEditingInProgress = false;
+                engine.routeEditingCompleted();
+            }
+
+            onWidthChanged: {
+                engine.areaSizeChanged(width, height);
+            }
+            onHeightChanged:  {
+                engine.areaSizeChanged(width, height);
+            }
+        }
+
+        Ship {
+            id: _ship
+            x: 10
+            y: 10
+
+            animationInterval: root.animationInterval
+        }
+
+        Cannon {
+            anchors.centerIn: _area
+        }
+    }
+
+    Row {
+        id: _toolbar
+
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.bottom: parent.bottom
 
-        width: _zoneWidth
+        height: _playButton.height
 
-        color: "red"
+        Button {
+            id: _playButton
+            width: 100
+            text: "Play"
+            enabled: !_playTimer.running
+
+            onClicked: {
+                _playTimer.start();
+            }
+        }
+        Button {
+            id: _pauseButton
+            width: 100
+            text: "Pause"
+            enabled: _playTimer.running
+            onClicked: {
+                _playTimer.stop();
+            }
+        }
     }
 
-    Canvas {
-        id: _canvas
-        anchors.fill: parent
+    Timer {
+        // ! idiotic solution. move to Python side.
+        id: _playTimer
+        interval: animationInterval
+
+        running: false
+        repeat: true
+
+        onTriggered: {
+            engine.tick();
+        }
     }
 
-    Ship {
-        anchors.centerIn: _launchBay
-    }
+    Connections {
+        target: gameEngine
 
-    Cannon {
-        anchors.centerIn: _area
+        onMoveShipTo: {
+            _ship.x = newX - _ship.width / 2;
+            _ship.y = newY - _ship.height / 2;
+            _ship.rotation = newRotation;
+            gameEngine.log("\nShip moved to:  ("
+                           + newX + ":" + newY + "|" + newRotation + ")"
+                           + "  --->  "
+                           + (_ship.x + _ship.width / 2)
+                           + ":"
+                           + (_ship.y + _ship.height / 2)
+                           + "|"
+                           + _ship.rotation
+                           + "\n");
+        }
+
+        onStopPlay: {
+            _playTimer.stop();
+        }
     }
 }
