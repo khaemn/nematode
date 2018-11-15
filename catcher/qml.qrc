@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Ship.qml</file>
+        <file>spaceship.png</file>
+        <file>ship.png</file>
+        <file>Cannon.qml</file>
+        <file>cannon.png</file>
+    </qresource>
+</RCC>
