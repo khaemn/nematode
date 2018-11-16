@@ -2,24 +2,8 @@ from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 
-import math
-
-
-def angle_between_points( p0, p1, p2 ):
-    a = (p1[0]-p0[0])**2 + (p1[1]-p0[1])**2
-    b = (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2
-    c = (p2[0]-p0[0])**2 + (p2[1]-p0[1])**2
-    return math.acos( (a+b-c) / math.sqrt(4*a*b) ) * 180 / math.pi
-
-
-def inclination(p1, p2):
-    h = p2[1] - p1[1]
-    w = p2[0] - p1[0]
-    angle = 0
-    if abs(w) > 0 :
-        angle = math.atan(h / w) #* 180 / math.pi
-    return 90 * angle
-
+from spaceships import *
+from helpermath import *
 
 
 class GameEngine(QObject):
@@ -42,6 +26,8 @@ class GameEngine(QObject):
     areaWidth = 0
     areaHeight = 0
 
+    ship = SimpleShip()
+
     @pyqtSlot(str)
     def log(self, message):
         print(message)
@@ -55,13 +41,13 @@ class GameEngine(QObject):
             self.stopPlay.emit()
             self.routeIndex = 0
             return
-        newX = self.route[self.routeIndex][0]
-        newY = self.route[self.routeIndex][1]
 
-        angle = inclination(
-            self.route[max([self.routeIndex - 1, 0])],
-            self.route[self.routeIndex]
-        )
+        self.ship.fly()
+
+        newX = self.ship.position[0]  # self.route[self.routeIndex][0]
+        newY = self.ship.position[1]  # self.route[self.routeIndex][1]
+        angle = self.ship.course
+
         print("Sending move request to: ", newX, newY, angle)
         self.moveShipTo.emit(newX,
                              newY,
@@ -73,6 +59,9 @@ class GameEngine(QObject):
         self.isRouteBeingEdited = False
         print("Route editing completed.")
         print(self.route)
+        self.ship.initFlight([0, 0, 100, 100],
+                             [0, 0, 100, 100],
+                             self.route)
         # TODO: impl!
 
     @pyqtSlot(int, int)
