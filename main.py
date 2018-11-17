@@ -5,6 +5,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtProperty, pyqtSignal, pyqtSlot
 from spaceships import *
 from helpermath import *
 from predictors import *
+from enum import Enum
 
 #from lstm_bilinear_predictor import *
 
@@ -20,6 +21,9 @@ class UiPoint(QObject):
         self._x = x
         self._y = y
 
+    def __str__(self):
+        return "%.0f:%.0f" % (self._x, self._y)
+
     @pyqtProperty('int')
     def x(self):
         return self._x
@@ -27,6 +31,12 @@ class UiPoint(QObject):
     @pyqtProperty('int')
     def y(self):
         return self._y
+
+
+class GameStep(Enum):
+    Predicting = 0
+    Flying = 1
+    Shooting = 2
 
 
 class GameEngine(QObject):
@@ -50,9 +60,7 @@ class GameEngine(QObject):
     showBlastAt = pyqtSignal(int, int, int, arguments=['newX', 'newY', 'newRadius'])
     predictionPointsChanged = pyqtSignal()
 
-    #_predictionPoints = [[0,0],[100,100],[200,200],[300,300],[400,400],[500,500]]
-    #_predictionPoints = [0, 100, 200, 300, 400, 500, 600, 700]
-    _predictionPoints = [UiPoint(0, 0), UiPoint(100, 100), UiPoint(200, 200)]
+    _predictionPoints = [UiPoint(0, 0)]
 
     isRouteBeingEdited = False
     route = []
@@ -72,6 +80,8 @@ class GameEngine(QObject):
     lastFuture = currPosition
     cannonBlastRadius = 5
 
+    step = GameStep.Predicting
+
     @pyqtSlot(str)
     def log(self, message):
         print(message)
@@ -83,41 +93,52 @@ class GameEngine(QObject):
             self.stopPlay.emit()
             return
 
-        # The ship performs its movement
-        self.ship.fly()
+        if self.step == GameStep.Flying:
+            # The ship performs its movement
+            self.ship.fly()
+            self.updateShipUi(self.ship) # to fly
+            self.step = GameStep.Shooting
+            return
 
-        # Cannon's bullet hits the predicted target's position
-        # TODO: cannon.observeHit()
-        self.showBlastAt.emit(self.lastNext[0], self.lastNext[1], self.cannonBlastRadius)
-        hitAccuracy = distance(self.lastNext, self.ship.position)
-        if hitAccuracy < self.cannonBlastRadius:
-            self.ship.takeDamage(10)  # TODO::!!!
+        if self.step == GameStep.Shooting:
+            # Cannon's bullet hits the predicted target's position
+            # TODO: cannon.observeHit()
+            self.showBlastAt.emit(self.lastNext[0], self.lastNext[1], self.cannonBlastRadius)
+            hitAccuracy = distance(self.lastNext, self.ship.position)
+            if hitAccuracy < (self.cannonBlastRadius + self.ship.hitRadius):
+                self.ship.takeDamage(10)  # TODO::!!!
+                self.updateShipUi(self.ship)  # to indicate damage
+            self.step = GameStep.Predicting
+            return
 
-        # Cannon observes real target's position and predicts the next and future ones
-        # TODO: rework to Cannon predictor
-        # TODO: cannon.decideFiring()
-        self.currPosition = self.ship.position
-        _input = np.array([[self.prevPosition, self.currPosition]])
-        _input = _input / self.areaWidth  # normalization
+        if self.step == GameStep.Predicting:
+            # Cannon observes real target's position and predicts the next and future ones
+            # TODO: rework to Cannon predictor
+            # TODO: cannon.decideFiring()
+            self.currPosition = self.ship.position
+            _input = np.array([[self.prevPosition, self.currPosition]])
+            _input = _input / self.areaWidth  # normalization
 
-        prediction = self.predictor.predict(_input) * self.areaWidth  # denormalization
-        print("Predicted trajectory:", prediction)
+            prediction = self.predictor.predict(_input) * self.areaWidth  # denormalization
+            print("Predicted trajectory:\n", prediction)
 
-        self._predictionPoints.clear()
-        for npPoint in prediction:
-            self._predictionPoints.append(UiPoint(npPoint[0], npPoint[1]))
-        self.predictionPointsChanged.emit()
+            self._predictionPoints.clear()
+            for npPoint in prediction:
+                uiPoint = UiPoint(npPoint[0], npPoint[1])
+                self._predictionPoints.append(uiPoint)
+            print("UiPoints are about to be sent: ", [str(pt) for pt in self._predictionPoints])
+            self.predictionPointsChanged.emit()
 
-        if len(prediction) > 1:
-            self.showFuturePointAt.emit(prediction[1][0], prediction[1][1])
-            self.lastFuture = [prediction[1][0], prediction[1][1]]
+            # if len(prediction) > 1:
+            #    self.showFuturePointAt.emit(prediction[1][0], prediction[1][1])
+            #    self.lastFuture = [prediction[1][0], prediction[1][1]]
+            # self.showNextPointAt.emit(prediction[0][0], prediction[0][1])
 
-        self.showNextPointAt.emit(prediction[0][0], prediction[0][1])
+            self.lastNext = [prediction[0][0], prediction[0][1]]
+            self.prevPosition = self.ship.position
 
-        self.lastNext = [prediction[0][0], prediction[0][1]]
-        self.prevPosition = self.ship.position
-
-        self.updateShipUi(self.ship)
+            self.step = GameStep.Flying
+            return
 
     @pyqtSlot()
     def initFlight(self):

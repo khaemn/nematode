@@ -50,6 +50,7 @@ class BaseShip:
 
     def takeDamage(self, dmg):
         self.health = max(0, self.health - (dmg / self.armor))
+        self.isAlive = self.health > 0
 
 
 class SimpleShip(BaseShip):

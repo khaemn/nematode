@@ -18,9 +18,9 @@ Canvas {
 
     property alias next: _next
     property alias future: _future
-    property alias blast: _blast
 
     property int blastRadius: 20
+    property int animationDuration: 500
     readonly property int routePointSize: 10
     readonly property int predictionPointSize: 10
 
@@ -59,7 +59,7 @@ Canvas {
     // TODO: eliminate copypasta
     function _render_predictions() {
         var ctx = getContext("2d");
-        for (var i = 1; i < predictionPoints.length; i++) {
+        for (var i = 0; i < predictionPoints.length; i++) {
             ctx.drawImage("img/prediction.png",
                           predictionPoints[i][0] - predictionPointSize/2,
                           predictionPoints[i][1] - predictionPointSize/2,
@@ -70,7 +70,7 @@ Canvas {
 
     function _render_route() {
         var ctx = getContext("2d");
-        for (var i = 1; i < route.length; i++) {
+        for (var i = 0; i < route.length; i++) {
             ctx.drawImage("img/routepoint.png",
                           route[i][0],
                           route[i][1],
@@ -81,7 +81,7 @@ Canvas {
 
     function _render_blasts() {
         var ctx = getContext("2d");
-        for (var i = 1; i < blastPoints.length; i++) {
+        for (var i = 0; i < blastPoints.length; i++) {
             ctx.drawImage("img/blast.png",
                           blastPoints[i][0],
                           blastPoints[i][1],
@@ -104,17 +104,6 @@ Canvas {
         id: _future
         visible: false
         opacity: 0.3
-    }
-
-    Marker {
-        id: _blast
-        visible: false
-
-        size: 40
-        color: "yellow"
-        opacity: 1.0
-
-        z: parent.z + 1
     }
 
     onPaint: {

@@ -33,4 +33,7 @@ class PrimitiveLinearPredictor(Predictor):
         futureX = nextX + (nextX - currX)
         futureY = nextY + (nextY - currY)
 
-        return np.array([[nextX, nextY], [futureX, futureY]])
+        postFutureX = futureX + (futureX - nextX)
+        postFutureY = futureY + (futureY - nextY)
+
+        return np.array([[nextX, nextY], [futureX, futureY], [postFutureX, postFutureY]])

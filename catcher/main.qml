@@ -41,9 +41,7 @@ ApplicationWindow {
     function stopGame() {
         isGameInProgress = false;
         _playTimer.stop();
-        _canvas.next.visible = false;
-        _canvas.future.visible = false;
-        _canvas.blast.visible = false;
+        _blast.visible = false;
     }
 
     Item {
@@ -92,7 +90,7 @@ ApplicationWindow {
             id: _area
 
             property int inputDivider: 0
-            property int inputDividerThreshold: 5
+            property int inputDividerThreshold: 15
 
             property bool isEditingInProgress: false
 
@@ -142,14 +140,42 @@ ApplicationWindow {
             animationInterval: root.animationInterval
         }
 
-        Marker {
-            // Workaround to display blast over the ship
+        Image {
             id: _blast
-            visible: _canvas.blast.visible
-            centerPoint: _canvas.blast.centerPoint
-            size: _canvas.blast.size
-            color: _canvas.blast.color
-            opacity: 0.6
+
+            property int size: 100
+            property point centerPoint: "0,0"
+
+            function animateOpacity() {
+                fadeIn.start();
+            }
+
+            OpacityAnimator {
+                id: fadeIn
+                target: _blast
+                from: 0
+                to: 1
+                duration: root.animationDuration
+                onStopped: {
+                    fadeOut.start();
+                }
+            }
+            OpacityAnimator {
+                id: fadeOut
+                target: _blast
+                from: 1
+                to: 0
+                duration: root.animationDuration
+            }
+
+            width: size
+            height: size
+
+            source: "img/blast.png"
+
+            x: centerPoint.x - width / 2
+            y: centerPoint.y - height / 2
+            visible: false
         }
 
         Cannon {
@@ -258,30 +284,31 @@ ApplicationWindow {
             stopGame();
         }
 
-        onShowNextPointAt: {
-            _canvas.next.centerPoint.x = newX;
-            _canvas.next.centerPoint.y = newY;
-            _canvas.next.visible = true;
-        }
+//        onShowNextPointAt: {
+//            _canvas.next.centerPoint.x = newX;
+//            _canvas.next.centerPoint.y = newY;
+//            _canvas.next.visible = true;
+//        }
 
-        onShowFuturePointAt: {
-            _canvas.future.centerPoint.x = newX;
-            _canvas.future.centerPoint.y = newY;
-            _canvas.future.visible = true;
-        }
+//        onShowFuturePointAt: {
+//            _canvas.future.centerPoint.x = newX;
+//            _canvas.future.centerPoint.y = newY;
+//            _canvas.future.visible = true;
+//        }
 
         onShowBlastAt: {
-            _canvas.blast.centerPoint.x = newX;
-            _canvas.blast.centerPoint.y = newY;
-            _canvas.blast.visible = true;
-            _canvas.blast.size = newRadius * 2;
+            _blast.centerPoint.x = newX;
+            _blast.centerPoint.y = newY;
+            _blast.visible = true;
+            _blast.size = newRadius * 10;
+            _blast.animateOpacity();
         }
 
         onPredictionPointsChanged: {
             gameEngine.log("PredictionPointsChanged "
                            + gameEngine.predictionPoints.length);
             _canvas.predictionPoints = [];
-            for (var i = 0; i < gameEngine.predictionPoints.length; ++i) {
+            for (var i = 0; i < gameEngine.predictionPoints.length; i++) {
                 _canvas.predictionPoints.push(
                             [gameEngine.predictionPoints[i].x,
                              gameEngine.predictionPoints[i].y]);
