@@ -12,5 +12,6 @@
         <file>img/prediction.png</file>
         <file>img/blast.png</file>
         <file>img/routepoint.png</file>
+        <file>LinearIndicator.qml</file>
     </qresource>
 </RCC>

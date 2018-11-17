@@ -51,12 +51,11 @@ class GameEngine(QObject):
                                  arguments=['topLefX', 'topLeftY', 'bottomRightX', 'bottomRightY'])
     initShip = pyqtSignal(str, int, int, arguments=['imgWhenAlive', 'imgSize', 'hitRadius'])
 
-    updateShip = pyqtSignal(int, int, int, float, arguments=['newX', 'newY', 'newRotation', 'newHealth'])
+    updateShip = pyqtSignal(int, int, int, float, float,
+                arguments=['posX', 'posY', 'course', 'health', 'fuel'])
     stopPlay = pyqtSignal()
 
     # TODO: rework to Properties.
-    showNextPointAt = pyqtSignal(int, int, arguments=['newX', 'newY'])
-    showFuturePointAt = pyqtSignal(int, int, arguments=['newX', 'newY'])
     showBlastAt = pyqtSignal(int, int, int, arguments=['newX', 'newY', 'newRadius'])
     predictionPointsChanged = pyqtSignal()
 
@@ -180,7 +179,8 @@ class GameEngine(QObject):
         self.updateShip.emit(newX,
                              newY,
                              angle,
-                             _ship.health / _ship.initialHealth)
+                             _ship.health / _ship.initialHealth,
+                             _ship.fuel / _ship.initialFuel)
 
 
 if __name__ == "__main__":

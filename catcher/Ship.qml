@@ -4,6 +4,7 @@ Item {
     id: root
 
     property real health: 1.0
+    property real fuel: 1.0
     property real course: 0.0
     property int size: 40
     property int hitRadius: 5
@@ -24,23 +25,20 @@ Item {
         rotation: 45 + root.course // +45 because of rotation in original image
     }
 
-    Rectangle {
+    LinearIndicator {
         id: _healthIndicator
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: 2
-        color: "red"
+        value: root.health
+    }
 
-        Rectangle {
-            id: _health
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: parent.width * root.health
+    LinearIndicator {
+        id: _fuelIndicator
 
-            color: "lightgreen"
-        }
+        anchors.top: _healthIndicator.bottom
+        anchors.topMargin: 2
+
+        color: "transparent"
+        fillColor: "cyan"
+        value: root.fuel
     }
 
     Rectangle {

@@ -265,36 +265,25 @@ ApplicationWindow {
         target: gameEngine
 
         onUpdateShip: {
-            _ship.x = newX - _ship.width / 2;
-            _ship.y = newY - _ship.height / 2;
-            _ship.course = newRotation;
-            _ship.health = newHealth;
-            gameEngine.log("\nShip moved to:  ("
-                           + newX + ":" + newY + "|" + newRotation + ")"
-                           + "  --->  "
-                           + (_ship.x + _ship.width / 2)
-                           + ":"
-                           + (_ship.y + _ship.height / 2)
-                           + "|"
-                           + _ship.rotation
-                           + "\n");
+            _ship.x = posX - _ship.width / 2;
+            _ship.y = posY - _ship.height / 2;
+            _ship.course = course;
+            _ship.health = health;
+            _ship.fuel = fuel;
+            //            gameEngine.log("\nShip moved to:  ("
+            //                           + newX + ":" + newY + "|" + newRotation + ")"
+            //                           + "  --->  "
+            //                           + (_ship.x + _ship.width / 2)
+            //                           + ":"
+            //                           + (_ship.y + _ship.height / 2)
+            //                           + "|"
+            //                           + _ship.rotation
+            //                           + "\n");
         }
 
         onStopPlay: {
             stopGame();
         }
-
-//        onShowNextPointAt: {
-//            _canvas.next.centerPoint.x = newX;
-//            _canvas.next.centerPoint.y = newY;
-//            _canvas.next.visible = true;
-//        }
-
-//        onShowFuturePointAt: {
-//            _canvas.future.centerPoint.x = newX;
-//            _canvas.future.centerPoint.y = newY;
-//            _canvas.future.visible = true;
-//        }
 
         onShowBlastAt: {
             _blast.centerPoint.x = newX;
