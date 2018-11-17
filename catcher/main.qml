@@ -25,7 +25,7 @@ ApplicationWindow {
     property bool isGameInProgress: false
 
     function init() {
-        _canvas.doAction("clear");
+        _canvas.doAction(_canvas.action_clear);
         _ship.anchors.centerIn = _launchBay
         _ship.anchors.centerIn = undefined
         _ship.course = 0;
@@ -109,7 +109,7 @@ ApplicationWindow {
                     return;
                 }
                 inputDivider = 0;
-                _canvas.doAction("line", mouseX, mouseY);
+                _canvas.doAction(_canvas.action_line, mouseX, mouseY);
                 console.log(mouseX, mouseY);
                 engine.addRoutePoint(mouseX, mouseY);
             }
@@ -209,6 +209,17 @@ ApplicationWindow {
                 _playTimer.start();
             }
         }
+        Button {
+            id: _debugButton
+            width: 100
+            text: "DEBUG"
+            onClicked: {
+                _canvas.doAction(_canvas.action_render_predictions);
+                _canvas.doAction(_canvas.action_render_route);
+                _canvas.doAction(_canvas.action_render_blasts);
+            }
+        }
+
     }
 
     Timer {
@@ -264,6 +275,18 @@ ApplicationWindow {
             _canvas.blast.centerPoint.y = newY;
             _canvas.blast.visible = true;
             _canvas.blast.size = newRadius * 2;
+        }
+
+        onPredictionPointsChanged: {
+            gameEngine.log("PredictionPointsChanged "
+                           + gameEngine.predictionPoints.length);
+            _canvas.predictionPoints = [];
+            for (var i = 0; i < gameEngine.predictionPoints.length; ++i) {
+                _canvas.predictionPoints.push(
+                            [gameEngine.predictionPoints[i].x,
+                             gameEngine.predictionPoints[i].y]);
+            }
+            _canvas.doAction(_canvas.action_render_predictions);
         }
     }
 }

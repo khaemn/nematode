@@ -24,8 +24,8 @@ class PrimitiveLinearPredictor(Predictor):
     def predict(self, input=np.zeros((1,2,2))):
         Predictor.validateInput(input)
 
-        prevX, prevY = input[0][0], input[0][1]
-        currX, currY = input[1][0], input[1][1]
+        prevX, prevY = input[0][0][0], input[0][0][1]
+        currX, currY = input[0][1][0], input[0][1][1]
 
         nextX = currX + (currX - prevX)
         nextY = currY + (currY - prevY)

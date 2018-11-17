@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Ship.qml</file>
+        <file>Cannon.qml</file>
+        <file>RouteCanvas.qml</file>
+        <file>Marker.qml</file>
+        <file>img/cannon.png</file>
+        <file>img/dead.png</file>
+        <file>img/ship.png</file>
+        <file>img/spaceship.png</file>
+        <file>img/prediction.png</file>
+        <file>img/blast.png</file>
+        <file>img/routepoint.png</file>
+    </qresource>
+</RCC>

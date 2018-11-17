@@ -1,14 +1,32 @@
 from PyQt5.QtGui import QGuiApplication
-from PyQt5.QtQml import QQmlApplicationEngine
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtQml import QQmlListProperty, QQmlApplicationEngine, qmlRegisterType
+from PyQt5.QtCore import QObject, QTimer, pyqtProperty, pyqtSignal, pyqtSlot
 
 from spaceships import *
 from helpermath import *
 from predictors import *
 
-from lstm_bilinear_predictor import *
+#from lstm_bilinear_predictor import *
 
 import numpy as np
+
+
+class UiPoint(QObject):
+    _x=0
+    _y=0
+
+    def __init__(self, x=0, y=0, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._x = x
+        self._y = y
+
+    @pyqtProperty('int')
+    def x(self):
+        return self._x
+
+    @pyqtProperty('int')
+    def y(self):
+        return self._y
 
 
 class GameEngine(QObject):
@@ -26,9 +44,15 @@ class GameEngine(QObject):
     updateShip = pyqtSignal(int, int, int, float, arguments=['newX', 'newY', 'newRotation', 'newHealth'])
     stopPlay = pyqtSignal()
 
+    # TODO: rework to Properties.
     showNextPointAt = pyqtSignal(int, int, arguments=['newX', 'newY'])
     showFuturePointAt = pyqtSignal(int, int, arguments=['newX', 'newY'])
     showBlastAt = pyqtSignal(int, int, int, arguments=['newX', 'newY', 'newRadius'])
+    predictionPointsChanged = pyqtSignal()
+
+    #_predictionPoints = [[0,0],[100,100],[200,200],[300,300],[400,400],[500,500]]
+    #_predictionPoints = [0, 100, 200, 300, 400, 500, 600, 700]
+    _predictionPoints = [UiPoint(0, 0), UiPoint(100, 100), UiPoint(200, 200)]
 
     isRouteBeingEdited = False
     route = []
@@ -40,7 +64,8 @@ class GameEngine(QObject):
     ship = SimpleShip()
 
     # TODO: move to Cannon
-    predictor = LstmLinearPredictor()
+    #predictor = LstmLinearPredictor()
+    predictor = PrimitiveLinearPredictor()
     prevPosition = [0.0, 0.0]
     currPosition = [0.0, 0.0]
     lastNext = currPosition
@@ -77,6 +102,12 @@ class GameEngine(QObject):
 
         prediction = self.predictor.predict(_input) * self.areaWidth  # denormalization
         print("Predicted trajectory:", prediction)
+
+        self._predictionPoints.clear()
+        for npPoint in prediction:
+            self._predictionPoints.append(UiPoint(npPoint[0], npPoint[1]))
+        self.predictionPointsChanged.emit()
+
         if len(prediction) > 1:
             self.showFuturePointAt.emit(prediction[1][0], prediction[1][1])
             self.lastFuture = [prediction[1][0], prediction[1][1]]
@@ -114,6 +145,10 @@ class GameEngine(QObject):
     def areaSizeChanged(self, w, h):
         self.areaWidth = w
         self.areaHeight = h
+
+    @pyqtProperty(QQmlListProperty, notify=predictionPointsChanged)
+    def predictionPoints(self):
+        return QQmlListProperty(UiPoint, self, self._predictionPoints)
 
     def updateShipUi(self, _ship=BaseShip()):
         newX = _ship.position[0]
