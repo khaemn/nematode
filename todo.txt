@@ -1,0 +1,6 @@
+A   Launch/landing proper init
+A   route file loading
+A   overload calculation
+A   hitmiss stat calculation
+
+B   hitmiss, speed, course and so on disaplying on UI

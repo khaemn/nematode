@@ -6,11 +6,12 @@ from spaceships import *
 from helpermath import *
 from predictors import *
 from enum import Enum
-
-#from lstm_bilinear_predictor import *
+#@from lstm_bilinear_predictor import *
 
 import numpy as np
-
+import json
+import io
+import os
 
 class UiPoint(QObject):
     _x=0
@@ -40,20 +41,37 @@ class GameStep(Enum):
 
 
 class GameEngine(QObject):
+    launchBay = [0, 0, 100, 100]
+    landingZone = [700, 700, 100, 100]
+    settingsFile = "settings.json"
+
     def __init__(self):
         QObject.__init__(self)
+        # Write JSON file
+        if not os.path.isfile(self.settingsFile):
+            with io.open(self.settingsFile, 'w', encoding='utf8') as outfile:
+                str_ = json.dumps({'launchBay' : self.launchBay, 'landingZone': self.landingZone},
+                                  indent=4, sort_keys=False,
+                                  separators=(',', ': '), ensure_ascii=True)
+                outfile.write(str_)
+        else:
+            with io.open(self.settingsFile, 'r', encoding='utf8') as settingsFile:
+                settings = json.load(settingsFile)
+                self.landingZone = settings['landingZone']
+                self.launchBay = settings['launchBay']
+                print('landingZone', self.landingZone, 'launchBay', self.launchBay)
+
 
     # обязательно даём название аргументу через arguments=['sum']
     # иначе нельзя будет его забрать в QML
     # Signals:
-    initLaunchBay = pyqtSignal(int, int, int, float, arguments=['topLefX', 'topLeftY', 'bottomRightX', 'bottomRightY'])
-    initLandingZone = pyqtSignal(int, int, int, float,
-                                 arguments=['topLefX', 'topLeftY', 'bottomRightX', 'bottomRightY'])
+    initLaunchBay = pyqtSignal(int, int, int, int, arguments=['_x', '_y', '_width', '_height'])
+    initLandingZone = pyqtSignal(int, int, int, int, arguments=['_x', '_y', '_width', '_height'])
     initShip = pyqtSignal(str, int, int, arguments=['imgWhenAlive', 'imgSize', 'hitRadius'])
 
     updateShip = pyqtSignal(int, int, int, float, float,
                 arguments=['posX', 'posY', 'course', 'health', 'fuel'])
-    stopPlay = pyqtSignal()
+    stopPlay = pyqtSignal(bool, arguments=['win'])
 
     # TODO: rework to Properties.
     showBlastAt = pyqtSignal(int, int, int, arguments=['newX', 'newY', 'newRadius'])
@@ -88,8 +106,14 @@ class GameEngine(QObject):
     # QT slot without args
     @pyqtSlot()
     def tick(self):
-        if self.ship.isLanded or not self.ship.isAlive:
-            self.stopPlay.emit()
+        if self.ship.isLanded and self.ship.isAlive:
+            self.stopPlay.emit(self.ship.isAlive)
+            print("Ship landed successfully! You win!")
+            return
+
+        if not self.ship.isAlive:
+            self.stopPlay.emit(self.ship.isAlive)
+            print("Human killed. Robot wins.")
             return
 
         if self.step == GameStep.Flying:
@@ -100,6 +124,9 @@ class GameEngine(QObject):
             return
 
         if self.step == GameStep.Shooting:
+            self.step = GameStep.Predicting
+            if not self.ship.isOnRoute:
+                return
             # Cannon's bullet hits the predicted target's position
             # TODO: cannon.observeHit()
             self.showBlastAt.emit(self.lastNext[0], self.lastNext[1], self.cannonBlastRadius)
@@ -107,7 +134,6 @@ class GameEngine(QObject):
             if hitAccuracy < (self.cannonBlastRadius + self.ship.hitRadius):
                 self.ship.takeDamage(10)  # TODO::!!!
                 self.updateShipUi(self.ship)  # to indicate damage
-            self.step = GameStep.Predicting
             return
 
         if self.step == GameStep.Predicting:
@@ -142,8 +168,8 @@ class GameEngine(QObject):
     @pyqtSlot()
     def initFlight(self):
         # TODO: impl. Zone reading from the file (?)
-        self.ship.initFlight([[0, 0], [100, 100]],
-                             [[500, 500], [100, 100]],
+        self.ship.initFlight(self.launchBay,
+                             self.landingZone,
                              self.route)
 
     @pyqtSlot()
@@ -197,8 +223,14 @@ if __name__ == "__main__":
     # загружаем файл qml в движок
     engine.load("catcher/main.qml")
 
-    gameEngine.initLaunchBay.emit(0, 0, 100, 100)
-    gameEngine.initLandingZone.emit(0, 0, 100, 100)
+    gameEngine.initLaunchBay.emit(gameEngine.launchBay[0],
+                                  gameEngine.launchBay[1],
+                                  gameEngine.launchBay[2],
+                                  gameEngine.launchBay[3])
+    gameEngine.initLandingZone.emit(gameEngine.landingZone[0],
+                                    gameEngine.landingZone[1],
+                                    gameEngine.landingZone[2],
+                                    gameEngine.landingZone[3])
     gameEngine.initShip.emit("ship", 40, 10)
 
     engine.quit.connect(app.quit)

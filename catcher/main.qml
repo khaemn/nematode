@@ -18,7 +18,7 @@ ApplicationWindow {
     color: "darkgrey"
 
     readonly property int _zoneWidth: 100
-    readonly property int animationInterval: 500
+    readonly property int animationInterval: _playTimer.interval * 0.8
 
     readonly property var engine: gameEngine // context property
 
@@ -56,12 +56,11 @@ ApplicationWindow {
         Rectangle {
             id: _launchBay
 
-            // TODO: reanchor to a center point or given rect coords.
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            x: 0
+            y: 0
 
             width: _zoneWidth
+            height: _zoneWidth
 
             color: "blue"
         }
@@ -69,12 +68,11 @@ ApplicationWindow {
         Rectangle {
             id: _landingZone
 
-            // TODO: reanchor to a center point or given rect coords.
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            x: _playground.width - width
+            y: _playground.height - height
 
             width: _zoneWidth
+            height: _zoneWidth
 
             color: "darkgreen"
         }
@@ -90,7 +88,7 @@ ApplicationWindow {
             id: _area
 
             property int inputDivider: 0
-            property int inputDividerThreshold: 15
+            property int inputDividerThreshold: 5
 
             property bool isEditingInProgress: false
 
@@ -238,11 +236,9 @@ ApplicationWindow {
         Button {
             id: _debugButton
             width: 100
-            text: "DEBUG"
+            text: "Faster"
             onClicked: {
-                _canvas.doAction(_canvas.action_render_predictions);
-                _canvas.doAction(_canvas.action_render_route);
-                _canvas.doAction(_canvas.action_render_blasts);
+                _playTimer.interval = Math.max(100, _playTimer.interval - 100)
             }
         }
 
@@ -263,6 +259,20 @@ ApplicationWindow {
 
     Connections {
         target: gameEngine
+
+        onInitLaunchBay: {
+            _launchBay.x = _x
+            _launchBay.y = _y
+            _launchBay.width = _width
+            _launchBay.height = _height
+        }
+
+        onInitLandingZone: {
+            _landingZone.x = _x
+            _landingZone.y = _y
+            _landingZone.width = _width
+            _landingZone.height = _height
+        }
 
         onUpdateShip: {
             _ship.x = posX - _ship.width / 2;
@@ -294,8 +304,6 @@ ApplicationWindow {
         }
 
         onPredictionPointsChanged: {
-            gameEngine.log("PredictionPointsChanged "
-                           + gameEngine.predictionPoints.length);
             _canvas.predictionPoints = [];
             for (var i = 0; i < gameEngine.predictionPoints.length; i++) {
                 _canvas.predictionPoints.push(
