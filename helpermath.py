@@ -14,7 +14,5 @@ def distance(p1, p2):
 def inclination(p1, p2):
     h = p2[1] - p1[1]
     w = p2[0] - p1[0]
-    angle = 0
-    if abs(w) > 0 :
-        angle = math.atan(h / w) #* 180 / math.pi
-    return 90 * angle
+    angle = math.atan2(h, w)
+    return math.degrees(angle)

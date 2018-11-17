@@ -71,8 +71,8 @@ class BaseShip:
 
         if self.fuel > 0: # No change to course/speed possible without fuel
             self.speed = distance(self.position, self.prevPosition)
-            self.course = inclination(self.prevPosition, self.position)
-            self.overload = math.sqrt((self.speed - self.prevSpeed) ** 2 + (self.course - self.prevCourse) ** 2)
+            self.course = inclination(self.position, nextPosition)
+            self.overload = abs(self.speed - self.prevSpeed) + abs(self.course - self.prevCourse)
             print("ShipModel overload is", self.overload)
             self.fuel = max(0, self.fuel - self.overload / 10)  # TODO: investigate if ok
             self.prevSpeed = self.speed

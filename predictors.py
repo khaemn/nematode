@@ -19,16 +19,17 @@ class Predictor:
         if not valid: raise "Invalid input for Predictor! Expected 3D numpy array of shape (<n>, <m>, 2)"
 
 
-
+import random
 class PrimitiveLinearPredictor(Predictor):
+    noiseRatio = 0.02
     def predict(self, input=np.zeros((1,2,2))):
         Predictor.validateInput(input)
 
         prevX, prevY = input[0][0][0], input[0][0][1]
         currX, currY = input[0][1][0], input[0][1][1]
 
-        nextX = currX + (currX - prevX)
-        nextY = currY + (currY - prevY)
+        nextX = currX + (currX - prevX) + self.noiseRatio * (0.5 - random.random())
+        nextY = currY + (currY - prevY) + self.noiseRatio * (0.5 - random.random())
 
         futureX = nextX + (nextX - currX)
         futureY = nextY + (nextY - currY)
@@ -36,4 +37,5 @@ class PrimitiveLinearPredictor(Predictor):
         postFutureX = futureX + (futureX - nextX)
         postFutureY = futureY + (futureY - nextY)
 
-        return np.array([[nextX, nextY], [futureX, futureY], [postFutureX, postFutureY]])
+        #return np.array([[nextX, nextY], [futureX, futureY], [postFutureX, postFutureY]])
+        return np.array([[nextX, nextY]])

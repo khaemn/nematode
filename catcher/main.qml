@@ -189,11 +189,12 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
 
-        height: _playButton.height
+        height: 50
 
         Button {
             id: _playButton
             width: 100
+            height: parent.height
             text: "Play"
             enabled: !_playTimer.running && !isGameInProgress
 
@@ -204,6 +205,7 @@ ApplicationWindow {
         Button {
             id: _pauseButton
             width: 100
+            height: parent.height
             text: "Pause"
             enabled: _playTimer.running && isGameInProgress
             onClicked: {
@@ -213,6 +215,7 @@ ApplicationWindow {
         Button {
             id: _stepForward
             width: 100
+            height: parent.height
             text: "step >"
             enabled: !_playTimer.running
             onClicked: {
@@ -227,6 +230,7 @@ ApplicationWindow {
         Button {
             id: _resumeButton
             width: 100
+            height: parent.height
             text: "Resume"
             enabled: !_playTimer.running && isGameInProgress
             onClicked: {
@@ -236,9 +240,27 @@ ApplicationWindow {
         Button {
             id: _debugButton
             width: 100
+            height: parent.height
             text: "Faster"
             onClicked: {
                 _playTimer.interval = Math.max(100, _playTimer.interval - 100)
+            }
+        }
+        Rectangle {
+            id: courseIndicator
+            height: 30
+            width: 30
+            anchors.verticalCenter: parent.verticalCenter
+            color: "transparent"
+            border.width: 2
+            border.color: "black"
+            rotation: _ship.course
+            Rectangle {
+                anchors.right: courseIndicator.right
+                anchors.verticalCenter: parent.verticalCenter
+                height: 2
+                width: parent.width / 1.5
+                color: "red"
             }
         }
 
