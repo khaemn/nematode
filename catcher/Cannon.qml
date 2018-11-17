@@ -9,7 +9,7 @@ Item {
     height: size
 
     Image {
-        source: "cannon.png"
+        source: "img/cannon.png"
 
         anchors.centerIn: parent
 

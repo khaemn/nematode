@@ -1,3 +1,4 @@
+
 import QtQuick 2.5
 import QtQuick.Controls 1.4
 
@@ -5,18 +6,44 @@ ApplicationWindow {
     id: root
 
     visible: true
+
     width: 800
-    height: 200
+    height: 800
+    maximumHeight: height
+    maximumWidth: width
+    minimumHeight: height
+    minimumWidth: width
+
     title: qsTr("Nematode")
     color: "darkgrey"
 
     readonly property int _zoneWidth: 100
-    readonly property int animationInterval: 300
+    readonly property int animationInterval: 500
 
     readonly property var engine: gameEngine // context property
 
+    property bool isGameInProgress: false
+
     function init() {
-        // TODO: impl!
+        _canvas.doAction("clear");
+        _ship.anchors.centerIn = _launchBay
+        _ship.anchors.centerIn = undefined
+        _ship.course = 0;
+        _ship.health = 1.0
+    }
+
+    function startGame() {
+        engine.initFlight();
+        _playTimer.start();
+        isGameInProgress = true;
+    }
+
+    function stopGame() {
+        isGameInProgress = false;
+        _playTimer.stop();
+        _canvas.next.visible = false;
+        _canvas.future.visible = false;
+        _canvas.blast.visible = false;
     }
 
     Item {
@@ -51,11 +78,14 @@ ApplicationWindow {
 
             width: _zoneWidth
 
-            color: "red"
+            color: "darkgreen"
         }
 
         RouteCanvas {
             id: _canvas
+
+            anchors.fill: parent
+            cannon: _cannon
         }
 
         MouseArea {
@@ -86,7 +116,10 @@ ApplicationWindow {
 
             onCanceled: pressed
 
-            onPressed: { _canvas.doAction("clear"); }
+            onPressed: {
+                stopGame();
+                init();
+            }
 
             onReleased: {
                 isEditingInProgress = false;
@@ -109,7 +142,18 @@ ApplicationWindow {
             animationInterval: root.animationInterval
         }
 
+        Marker {
+            // Workaround to display blast over the ship
+            id: _blast
+            visible: _canvas.blast.visible
+            centerPoint: _canvas.blast.centerPoint
+            size: _canvas.blast.size
+            color: _canvas.blast.color
+            opacity: 0.6
+        }
+
         Cannon {
+            id: _cannon
             anchors.centerIn: _area
         }
     }
@@ -127,19 +171,42 @@ ApplicationWindow {
             id: _playButton
             width: 100
             text: "Play"
-            enabled: !_playTimer.running
+            enabled: !_playTimer.running && !isGameInProgress
 
             onClicked: {
-                _playTimer.start();
+                startGame();
             }
         }
         Button {
             id: _pauseButton
             width: 100
             text: "Pause"
-            enabled: _playTimer.running
+            enabled: _playTimer.running && isGameInProgress
             onClicked: {
                 _playTimer.stop();
+            }
+        }
+        Button {
+            id: _stepForward
+            width: 100
+            text: "step >"
+            enabled: !_playTimer.running
+            onClicked: {
+                if (isGameInProgress) {
+                    engine.tick();
+                } else {
+                    startGame();
+                    _playTimer.stop();
+                }
+            }
+        }
+        Button {
+            id: _resumeButton
+            width: 100
+            text: "Resume"
+            enabled: !_playTimer.running && isGameInProgress
+            onClicked: {
+                _playTimer.start();
             }
         }
     }
@@ -160,10 +227,11 @@ ApplicationWindow {
     Connections {
         target: gameEngine
 
-        onMoveShipTo: {
+        onUpdateShip: {
             _ship.x = newX - _ship.width / 2;
             _ship.y = newY - _ship.height / 2;
-            _ship.rotation = newRotation;
+            _ship.course = newRotation;
+            _ship.health = newHealth;
             gameEngine.log("\nShip moved to:  ("
                            + newX + ":" + newY + "|" + newRotation + ")"
                            + "  --->  "
@@ -176,7 +244,26 @@ ApplicationWindow {
         }
 
         onStopPlay: {
-            _playTimer.stop();
+            stopGame();
+        }
+
+        onShowNextPointAt: {
+            _canvas.next.centerPoint.x = newX;
+            _canvas.next.centerPoint.y = newY;
+            _canvas.next.visible = true;
+        }
+
+        onShowFuturePointAt: {
+            _canvas.future.centerPoint.x = newX;
+            _canvas.future.centerPoint.y = newY;
+            _canvas.future.visible = true;
+        }
+
+        onShowBlastAt: {
+            _canvas.blast.centerPoint.x = newX;
+            _canvas.blast.centerPoint.y = newY;
+            _canvas.blast.visible = true;
+            _canvas.blast.size = newRadius * 2;
         }
     }
 }

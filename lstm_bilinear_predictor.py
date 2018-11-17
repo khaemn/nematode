@@ -6,6 +6,8 @@ import os.path
 import math
 import random
 import numpy as np
+from predictors import Predictor
+
 np.set_printoptions(precision=2, suppress=True)
 
 random.seed(777)
@@ -47,11 +49,12 @@ from keras.layers import LSTM
 from keras.models import load_model
 
 
-class BilinearPredictor:
+class LstmLinearPredictor(Predictor):
+    TRAIN_ME = False
+    model_filename = 'models/lstm_bilinear_predictor.h5'
     def __init__(self):
+        super().__init__()
         # define model
-        self.TRAIN_ME = False
-        self.model_filename = 'models/lstm_bilinear_predictor.h5'
         self.model = Sequential()
         # If there is a file, load model from the file
         if os.path.isfile(self.model_filename) and not self.TRAIN_ME:
@@ -70,6 +73,7 @@ class BilinearPredictor:
             self.model.save(self.model_filename + 'bak')
 
     def predict(self, input):
+        Predictor.validateInput(input)
         return self.model.predict(input, verbose=0)
 
     def runTest(self):
@@ -103,6 +107,7 @@ class BilinearPredictor:
             #[-0.5, 0.5], [-0.9, 0.9], [-1.0, 1.0],
         ])
         testX = testX.reshape(len(testX), 2, 2)
+        print(testX.shape)
 
         # make predictions:
         predictions = self.predict(testX)
@@ -127,8 +132,10 @@ class BilinearPredictor:
                 % (firstX, firstY, secondX, secondY, predictedX, predictedY, expectedX, expectedY, error)
             )
 
-pred = BilinearPredictor()
+#'''
+pred = LstmLinearPredictor()
 pred.runTest()
+#'''
 
 
 
