@@ -95,12 +95,6 @@ ApplicationWindow {
             anchors.fill: parent
 
             onPositionChanged: {
-                if (!isEditingInProgress) {
-                    // Making immediate reaction on the first move.
-                    isEditingInProgress = true;
-                    inputDivider = inputDividerThreshold;
-                }
-
                 if (++inputDivider < inputDividerThreshold) {
                     return;
                 }
@@ -115,6 +109,9 @@ ApplicationWindow {
             onPressed: {
                 stopGame();
                 init();
+                engine.routeEditingStarted();
+                isEditingInProgress = true;
+                inputDivider = inputDividerThreshold;
             }
 
             onReleased: {
@@ -132,8 +129,8 @@ ApplicationWindow {
 
         Ship {
             id: _ship
-            x: 10
-            y: 10
+            x: _launchBay.x + _launchBay.width/2// - width/2
+            y: _launchBay.y + _launchBay.height/2// - height/2
 
             animationInterval: root.animationInterval
         }
@@ -182,88 +179,18 @@ ApplicationWindow {
         }
     }
 
-    Row {
+    ButtonBar {
         id: _toolbar
-
+        anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
-
         height: 50
 
-        Button {
-            id: _playButton
-            width: 100
-            height: parent.height
-            text: "Play"
-            enabled: !_playTimer.running && !isGameInProgress
-
-            onClicked: {
-                startGame();
-            }
-        }
-        Button {
-            id: _pauseButton
-            width: 100
-            height: parent.height
-            text: "Pause"
-            enabled: _playTimer.running && isGameInProgress
-            onClicked: {
-                _playTimer.stop();
-            }
-        }
-        Button {
-            id: _stepForward
-            width: 100
-            height: parent.height
-            text: "step >"
-            enabled: !_playTimer.running
-            onClicked: {
-                if (isGameInProgress) {
-                    engine.tick();
-                } else {
-                    startGame();
-                    _playTimer.stop();
-                }
-            }
-        }
-        Button {
-            id: _resumeButton
-            width: 100
-            height: parent.height
-            text: "Resume"
-            enabled: !_playTimer.running && isGameInProgress
-            onClicked: {
-                _playTimer.start();
-            }
-        }
-        Button {
-            id: _debugButton
-            width: 100
-            height: parent.height
-            text: "Faster"
-            onClicked: {
-                _playTimer.interval = Math.max(100, _playTimer.interval - 100)
-            }
-        }
-        Rectangle {
-            id: courseIndicator
-            height: 30
-            width: 30
-            anchors.verticalCenter: parent.verticalCenter
-            color: "transparent"
-            border.width: 2
-            border.color: "black"
-            rotation: _ship.course
-            Rectangle {
-                anchors.right: courseIndicator.right
-                anchors.verticalCenter: parent.verticalCenter
-                height: 2
-                width: parent.width / 1.5
-                color: "red"
-            }
-        }
-
+        playTimer: _playTimer
+        isGameInProgress: root.isGameInProgress
+        startGameCallback: root.startGame
+        engine: root.engine
+        course: _ship.course
     }
 
     Timer {

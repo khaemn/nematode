@@ -12,6 +12,7 @@ import numpy as np
 import json
 import io
 import os
+from time import gmtime, strftime
 
 class UiPoint(QObject):
     _x=0
@@ -99,6 +100,10 @@ class GameEngine(QObject):
 
     step = GameStep.Predicting
 
+    statistics = []
+    statisticHeader = "time,x,y,course,speed,acceleration,health,fuel,nextX,nextY,hit"
+    statisticFormat = "%d,%d,%d,%d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d"
+
     @pyqtSlot(str)
     def log(self, message):
         print(message)
@@ -106,15 +111,25 @@ class GameEngine(QObject):
     # QT slot without args
     @pyqtSlot()
     def tick(self):
+        wasHit = False
         if self.ship.isLanded and self.ship.isAlive:
-            self.stopPlay.emit(self.ship.isAlive)
+            self.stopPlay.emit(True)
+            print(self.statistics)
             print("Ship landed successfully! You win!")
             return
 
         if not self.ship.isAlive:
-            self.stopPlay.emit(self.ship.isAlive)
+            self.stopPlay.emit(False)
+            print(self.statistics)
             print("Human killed. Robot wins.")
             return
+
+        if self.ship.isStopped:
+            self.stopPlay.emit(False)
+            print(self.statistics)
+            print("Ship failed to achieve landing zone. Nobody cares it is alive, you lose anyway.")
+            return
+
 
         if self.step == GameStep.Flying:
             # The ship performs its movement
@@ -132,6 +147,7 @@ class GameEngine(QObject):
             self.showBlastAt.emit(self.lastNext[0], self.lastNext[1], self.cannonBlastRadius)
             hitAccuracy = distance(self.lastNext, self.ship.position)
             if hitAccuracy < (self.cannonBlastRadius + self.ship.hitRadius):
+                wasHit = True
                 self.ship.takeDamage(10)  # TODO::!!!
                 self.updateShipUi(self.ship)  # to indicate damage
             return
@@ -154,10 +170,21 @@ class GameEngine(QObject):
             print("UiPoints are about to be sent: ", [str(pt) for pt in self._predictionPoints])
             self.predictionPointsChanged.emit()
 
-            # if len(prediction) > 1:
-            #    self.showFuturePointAt.emit(prediction[1][0], prediction[1][1])
-            #    self.lastFuture = [prediction[1][0], prediction[1][1]]
-            # self.showNextPointAt.emit(prediction[0][0], prediction[0][1])
+            # "time,x,y,course,speed,acceleration,health,fuel,nextX,nextY,hit"
+            self.statistics.append(
+                self.statisticFormat % (self.ship.time,
+                                        self.ship.position[0],
+                                        self.ship.position[1],
+                                        self.ship.course,
+                                        self.ship.speed,
+                                        self.ship.acceleration,
+                                        self.ship.health,
+                                        self.ship.fuel,
+                                        prediction[0][0],
+                                        prediction[0][1],
+                                        wasHit
+                                        )
+            )
 
             self.lastNext = [prediction[0][0], prediction[0][1]]
             self.prevPosition = self.ship.position
@@ -173,24 +200,34 @@ class GameEngine(QObject):
                              self.route)
 
     @pyqtSlot()
+    def routeEditingStarted(self):
+        self.isRouteBeingEdited = True
+        self.route = []
+
+    @pyqtSlot()
     def routeEditingCompleted(self):
         self.isRouteBeingEdited = False
         print("Route editing completed.")
+        if (len(self.route) < 2
+            or not inZone(self.route[0], self.launchBay)
+            or not inZone(self.route[-1], self.landingZone)):
+            print("Invalid route: less than 2 points, or starts not from start, or ends not at the end.")
+            self.route = []
         print(self.route)
 
     @pyqtSlot(int, int)
     def addRoutePoint(self, x, y):
-        if not self.isRouteBeingEdited:
-            self.isRouteBeingEdited = True
-            self.route = []
         print("New route point:", x, y)
         self.route.append([x, y])
-        # TODO: impl!
 
-    @pyqtSlot(float, float)
-    def areaSizeChanged(self, w, h):
-        self.areaWidth = w
-        self.areaHeight = h
+    @pyqtSlot()
+    def saveRoute(self):
+        filename = "route_" + strftime("%Y%m%d_%H%M%S", gmtime()) + ".csv"
+        path = "routes/" + filename
+        with io.open(path, 'w', encoding='utf8') as outfile:
+            for point in self.route:
+                outfile.write("%.0f,%.0f\n"%(point[0], point[1]))
+        return
 
     @pyqtProperty(QQmlListProperty, notify=predictionPointsChanged)
     def predictionPoints(self):

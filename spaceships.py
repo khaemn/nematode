@@ -25,7 +25,7 @@ class BaseShip:
     landingZone = [[0.0, 0.0], [0.0, 0.0]]
 
     # Current status
-    overload = 0.0
+    acceleration = 0.0
     course = 0.0
     speed = 0.0
 
@@ -35,24 +35,26 @@ class BaseShip:
 
     prevPosition = [0.0, 0.0]
     position = [0.0, 0.0]
-    timestep = 0
+    time = 0
     health = initialHealth
     fuel = initialFuel
+
     isAlive = True
     isOnRoute = False
+    isStopped = False
     isLanded = False
     isLaunching = False
 
     def fly(self):
         maxTime = len(self.route) - 1
-        print("ShipModel time is", self.timestep)
-        print("ShipModel remaining route", maxTime - self.timestep)
+        print("ShipModel time is", self.time)
+        print("ShipModel remaining route", maxTime - self.time)
 
         nextPosition = [0, 0]
         if (self.fuel > 0) :
-            self.prevPosition = self.route[max(0, self.timestep - 1)]
-            self.position = self.route[min(self.timestep, maxTime)]
-            nextPosition = self.route[min(self.timestep + 1, maxTime)]
+            self.prevPosition = self.route[max(0, self.time - 1)]
+            self.position = self.route[min(self.time, maxTime)]
+            nextPosition = self.route[min(self.time + 1, maxTime)]
         else:
             # Without fuel - move with constant speed and course until death.
             self.speed = self.speed * 0.9
@@ -63,18 +65,21 @@ class BaseShip:
             nextPosition = [self.prevPosition[0] + xOffset*2,
                             self.prevPosition[1] + yOffset*2]
 
-        self.isLanded = inZone(self.position, self.landingZone) and self.fuel > 0
         self.isLaunching = inZone(self.position, self.launchBay) and self.fuel > 0
-        self.isOnRoute = not self.isLanded and not self.isLaunching
+        self.isStopped = (nextPosition == self.prevPosition)
+        self.isOnRoute = not inZone(self.position, self.landingZone)\
+                         and not inZone(self.position, self.launchBay)
+        self.isLanded = inZone(self.position, self.landingZone) and self.fuel > 0\
+                        and (self.isStopped or self.speed < 0.1)
 
         print("ShipModel position is", self.position, "(was ", self.prevPosition, ")", "(will be", nextPosition ,")")
 
         if self.fuel > 0: # No change to course/speed possible without fuel
             self.speed = distance(self.position, self.prevPosition)
             self.course = inclination(self.position, nextPosition)
-            self.overload = abs(self.speed - self.prevSpeed) + abs(self.course - self.prevCourse)
-            print("ShipModel overload is", self.overload)
-            self.fuel = max(0, self.fuel - self.overload / 10)  # TODO: investigate if ok
+            self.acceleration = abs(self.speed - self.prevSpeed) + abs(self.course - self.prevCourse)
+            print("ShipModel overload is", self.acceleration)
+            self.fuel = max(0, self.fuel - self.acceleration / 10)  # TODO: investigate if ok
             self.prevSpeed = self.speed
             self.prevCourse = self.course
 
@@ -82,13 +87,13 @@ class BaseShip:
         print("ShipModel course is", self.course)
 
         self.prevPosition = self.position
-        self.timestep += 1
+        self.time += 1
 
     def initFlight(self, _launchBay, _landingZone, _route):
         self.launchBay = _launchBay
         self.landingZone = _landingZone
         self.route = _route
-        self.timestep = 0
+        self.time = 0
         self.health = self.initialHealth
         self.fuel = self.initialFuel
         self.prevSpeed = self.speed = 0
@@ -96,7 +101,8 @@ class BaseShip:
         self.isAlive = True
         self.isOnRoute = False
         self.isLanded = False
-        self.isLaunching = False
+        self.isLaunching = True
+        self.isStopped = False
         return
 
     def takeDamage(self, dmg):

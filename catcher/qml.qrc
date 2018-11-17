@@ -13,5 +13,6 @@
         <file>img/blast.png</file>
         <file>img/routepoint.png</file>
         <file>LinearIndicator.qml</file>
+        <file>ButtonBar.qml</file>
     </qresource>
 </RCC>
