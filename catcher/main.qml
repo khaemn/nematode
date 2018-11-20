@@ -196,7 +196,7 @@ ApplicationWindow {
     Timer {
         // ! idiotic solution. move to Python side.
         id: _playTimer
-        interval: animationInterval
+        interval: 300
 
         running: false
         repeat: true

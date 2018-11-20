@@ -3,10 +3,11 @@ from PyQt5.QtQml import QQmlListProperty, QQmlApplicationEngine, qmlRegisterType
 from PyQt5.QtCore import QObject, QTimer, pyqtProperty, pyqtSignal, pyqtSlot
 
 from spaceships import *
-from helpermath import *
+from generators import helpermath as hm
 from predictors import *
 from enum import Enum
-#@from lstm_bilinear_predictor import *
+#from lstm_bilinear_predictor import *
+from lstm_mouse_predictor import *
 
 import numpy as np
 import json
@@ -90,8 +91,9 @@ class GameEngine(QObject):
     ship = SimpleShip()
 
     # TODO: move to Cannon
-    #predictor = LstmLinearPredictor()
-    predictor = PrimitiveLinearPredictor()
+    # predictor = LstmLinearPredictor()
+    # predictor = PrimitiveLinearPredictor()
+    predictor = LstmMousePredictor()
     prevPosition = [0.0, 0.0]
     currPosition = [0.0, 0.0]
     lastNext = currPosition
@@ -111,22 +113,26 @@ class GameEngine(QObject):
     # QT slot without args
     @pyqtSlot()
     def tick(self):
+        if len(self.route) < 2 :
+            self.stopPlay.emit(True)
+
         wasHit = False
+
         if self.ship.isLanded and self.ship.isAlive:
             self.stopPlay.emit(True)
-            print(self.statistics)
+            self.saveStats()
             print("Ship landed successfully! You win!")
             return
 
         if not self.ship.isAlive:
             self.stopPlay.emit(False)
-            print(self.statistics)
+            self.saveStats()
             print("Human killed. Robot wins.")
             return
 
         if self.ship.isStopped:
             self.stopPlay.emit(False)
-            print(self.statistics)
+            self.saveStats()
             print("Ship failed to achieve landing zone. Nobody cares it is alive, you lose anyway.")
             return
 
@@ -145,7 +151,7 @@ class GameEngine(QObject):
             # Cannon's bullet hits the predicted target's position
             # TODO: cannon.observeHit()
             self.showBlastAt.emit(self.lastNext[0], self.lastNext[1], self.cannonBlastRadius)
-            hitAccuracy = distance(self.lastNext, self.ship.position)
+            hitAccuracy = hm.distance(self.lastNext, self.ship.position)
             if hitAccuracy < (self.cannonBlastRadius + self.ship.hitRadius):
                 wasHit = True
                 self.ship.takeDamage(10)  # TODO::!!!
@@ -157,10 +163,15 @@ class GameEngine(QObject):
             # TODO: rework to Cannon predictor
             # TODO: cannon.decideFiring()
             self.currPosition = self.ship.position
-            _input = np.array([[self.prevPosition, self.currPosition]])
+            routeAsNP = np.array(self.ship.route)
+            _input = routeAsNP[:self.ship.time]
             _input = _input / self.areaWidth  # normalization
-
-            prediction = self.predictor.predict(_input) * self.areaWidth  # denormalization
+            if(len(_input) < 2): # minimum 2 points needed to make a preditcion
+                self.step = GameStep.Flying
+                return
+            _input = _input.reshape(1, len(_input), 2)
+            prediction = self.predictor.predict(_input)
+            prediction = prediction * self.areaWidth  # denormalization
             print("Predicted trajectory:\n", prediction)
 
             self._predictionPoints.clear()
@@ -227,7 +238,6 @@ class GameEngine(QObject):
         with io.open(path, 'w', encoding='utf8') as outfile:
             for point in self.route:
                 outfile.write("%.0f,%.0f\n"%(point[0], point[1]))
-        return
 
     @pyqtProperty(QQmlListProperty, notify=predictionPointsChanged)
     def predictionPoints(self):
@@ -245,6 +255,15 @@ class GameEngine(QObject):
                              _ship.health / _ship.initialHealth,
                              _ship.fuel / _ship.initialFuel)
 
+    def saveStats(self):
+        filename = "game_" + strftime("%Y%m%d_%H%M%S", gmtime()) + ".csv"
+        path = "games/" + filename
+        with io.open(path, 'w', encoding='utf8') as outfile:
+            outfile.write(self.statisticHeader)
+            outfile.write("\n")
+            for record in self.statistics:
+                outfile.write(record)
+                outfile.write("\n")
 
 if __name__ == "__main__":
     import sys

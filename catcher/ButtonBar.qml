@@ -10,6 +10,9 @@ Row {
     property alias course: courseIndicator.rotation
     property var startGameCallback: function(){}
 
+    readonly property int minInterval: 100
+    readonly property int maxInterval: 2000
+
     Button {
         id: _playButton
         width: 100
@@ -57,12 +60,23 @@ Row {
         }
     }
     Button {
-        id: _debugButton
+        id: _fasterButton
         width: 100
         height: parent.height
         text: "Faster"
+        enabled: playTimer.interval > minInterval
         onClicked: {
-            playTimer.interval = Math.max(100, playTimer.interval - 100)
+            playTimer.interval = Math.max(minInterval, playTimer.interval - 100)
+        }
+    }
+    Button {
+        id: _slowerButton
+        width: 100
+        height: parent.height
+        enabled: playTimer.interval < maxInterval
+        text: "Slower"
+        onClicked: {
+            playTimer.interval = Math.min(maxInterval, playTimer.interval + 100)
         }
     }
     Rectangle {
