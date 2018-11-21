@@ -7,7 +7,8 @@ from generators import helpermath as hm
 from predictors import *
 from enum import Enum
 #from lstm_bilinear_predictor import *
-from lstm_mouse_predictor import *
+#from lstm_mouse_predictor import *
+from lstm_elliptical_predictor import *
 
 import numpy as np
 import json
@@ -93,7 +94,10 @@ class GameEngine(QObject):
     # TODO: move to Cannon
     # predictor = LstmLinearPredictor()
     # predictor = PrimitiveLinearPredictor()
-    predictor = LstmMousePredictor()
+    # predictor = LstmMousePredictor()
+    predictor = LstmEllipticalPredictor()
+    lastPositions = []
+
     prevPosition = [0.0, 0.0]
     currPosition = [0.0, 0.0]
     lastNext = currPosition
@@ -163,8 +167,12 @@ class GameEngine(QObject):
             # TODO: rework to Cannon predictor
             # TODO: cannon.decideFiring()
             self.currPosition = self.ship.position
-            routeAsNP = np.array(self.ship.route)
-            _input = routeAsNP[:self.ship.time]
+
+            self.lastPositions.append(self.ship.position)
+            if(len(self.lastPositions) > 5) : #TODO: named constant!
+                self.lastPositions.pop(0)
+
+            _input = np.array(self.lastPositions)
             _input = _input / self.areaWidth  # normalization
             if(len(_input) < 2): # minimum 2 points needed to make a preditcion
                 self.step = GameStep.Flying

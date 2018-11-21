@@ -190,9 +190,10 @@ def getTrainingData(datasetSize, inputCount, outputCount, simulate_acceleration=
             plt.plot(line[2:,0], line[2:,1], '--')
         plt.title('Generated data')
         plt.show()
-    X = np.zeros((datasetSize, inputCount, 2))
-    Y = np.zeros((datasetSize, outputCount*2))
-    return X, Y
+    Xr, Yr = dataset[:, :inputCount], dataset[:, inputCount:]
+    Xr = Xr.reshape((len(Xr), inputCount, 2))
+    Yr = Yr.reshape((len(Yr), outputCount*2))
+    return Xr, Yr
 
 
-#getTrainingData(2, 5, 3)
+#print (getTrainingData(2, 5, 3))

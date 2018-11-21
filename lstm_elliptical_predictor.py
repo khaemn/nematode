@@ -1,14 +1,14 @@
 '''
 This script trains a predictor for a M next points on the
 trajectory using previous N points as input. Trained on
-routes drawed by mouse.
+elliptical generated routes
 '''
 import os.path
 import math
 import random
 import numpy as np
 from predictors import Predictor
-import csvRouteToNumpyDatasetParser as Parser
+from generators import circularRouteGenerator as CRG
 
 np.set_printoptions(precision=2, suppress=True)
 
@@ -21,33 +21,34 @@ from keras.models import load_model
 
 lstmInputPoints = 5
 lstmPredictedPoints = 3
-trainingFile = "routes/route_20181118_223241.csv"
 
 
-class LstmMousePredictor(Predictor):
+class LstmEllipticalPredictor(Predictor):
     TRAIN_ME = False
-    model_filename = 'models/lstm_mouse_predictor.h5'
+    model_filename = 'models/lstm_elliptical_predictor.h5'
     def __init__(self):
         super().__init__()
         # define model
         self.model = Sequential()
         # If there is a file, load model from the file
-        if os.path.isfile(self.model_filename) and not self.TRAIN_ME:
+        if os.path.isfile(self.model_filename):
             self.model = load_model(self.model_filename)
-            return
-        # Building the model (https://github.com/keras-team/keras/issues/6351)
-        self.model.add(LSTM(20, input_shape=(lstmInputPoints, 2)))
-        self.model.add(Dense(lstmPredictedPoints * 2, activation='linear'))
-        # compile model
-        self.model.compile(loss='mse', optimizer='adam')
-        # fit model
-        for i in range (0, 1):
-            # TODO: impl. various files!
-            X, Y = Parser.getTrainingData(trainingFile, lstmInputPoints, lstmPredictedPoints)
-            self.model.fit(X, Y, epochs=1000, verbose=2, shuffle=False, batch_size=1)
-            # save model to single file
-            self.model.save(self.model_filename)
-            self.model.save(self.model_filename + 'bak')
+        else:
+            # Building the model (https://github.com/keras-team/keras/issues/6351)
+            self.model.add(LSTM(20, input_shape=(lstmInputPoints, 2)))
+            self.model.add(Dense(lstmPredictedPoints * 2, activation='linear'))
+            # compile model
+            self.model.compile(loss='mse', optimizer='adam')
+            # fit model
+        if self.TRAIN_ME:
+            _datasetSize = 1000
+            for i in range (0, 10):
+                X, Y = CRG.getTrainingData(_datasetSize, lstmInputPoints, lstmPredictedPoints)
+                self.model.fit(X, Y, epochs=10, verbose=2, shuffle=True, batch_size=int(_datasetSize / 100))
+                # save model to single file
+                self.model.save(self.model_filename)
+                self.model.save(self.model_filename + 'bak')
+
 
     def predict(self, input):
         Predictor.validateInput(input)
@@ -64,10 +65,10 @@ class LstmMousePredictor(Predictor):
         return self.model.predict(input, verbose=0)
 
     def runTest(self):
-        testX, testY = Parser.getTrainingData(trainingFile, lstmInputPoints, lstmPredictedPoints)
+        testX, testY = CRG.getTrainingData(1, lstmInputPoints, lstmPredictedPoints)
 
         # make predictions:
-        predictions = self.predict(testX[3].reshape(1,5,2))
+        predictions = self.predict(testX[3].reshape(1,lstmInputPoints,2))
 
         # print results:
         normalizing_coef = 800
@@ -89,10 +90,10 @@ class LstmMousePredictor(Predictor):
                 % (firstX, firstY, secondX, secondY, predictedX, predictedY, expectedX, expectedY, error)
             )
 
-'''
-pred = LstmMousePredictor()
-pred.runTest()
-'''
+#'''
+pred = LstmEllipticalPredictor()
+#pred.runTest()
+#'''
 
 
 
