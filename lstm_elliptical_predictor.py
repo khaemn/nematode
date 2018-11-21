@@ -22,29 +22,36 @@ from keras.models import load_model
 lstmInputPoints = 5
 lstmPredictedPoints = 3
 
-
 class LstmEllipticalPredictor(Predictor):
-    TRAIN_ME = False
+    TRAIN_ME = True
+    #TRAIN_ME = False
     model_filename = 'models/lstm_elliptical_predictor.h5'
-    def __init__(self):
+    inputs=lstmInputPoints
+    outputs=lstmPredictedPoints
+
+    def __init__(self, inputs=lstmInputPoints, outputs=lstmPredictedPoints):
         super().__init__()
         # define model
         self.model = Sequential()
+        self.inputs = inputs
+        self.outputs = outputs
         # If there is a file, load model from the file
         if os.path.isfile(self.model_filename):
             self.model = load_model(self.model_filename)
         else:
-            # Building the model (https://github.com/keras-team/keras/issues/6351)
-            self.model.add(LSTM(20, input_shape=(lstmInputPoints, 2)))
-            self.model.add(Dense(lstmPredictedPoints * 2, activation='linear'))
-            # compile model
+            # https: // machinelearningmastery.com / stacked - long - short - term - memory - networks /
+            self.model.add(LSTM(self.inputs * 2, return_sequences = True, input_shape=(self.inputs, 2)))
+            self.model.add(LSTM(self.inputs * 2))
+            self.model.add(Dense(self.outputs * 2, activation='linear'))
+            self.model.add(Dense(self.outputs * 2, activation='linear'))
             self.model.compile(loss='mse', optimizer='adam')
             # fit model
         if self.TRAIN_ME:
-            _datasetSize = 1000
-            for i in range (0, 10):
-                X, Y = CRG.getTrainingData(_datasetSize, lstmInputPoints, lstmPredictedPoints)
-                self.model.fit(X, Y, epochs=10, verbose=2, shuffle=True, batch_size=int(_datasetSize / 100))
+            _datasetSize = 10000
+            _iterations = 100
+            for i in range (0, _iterations):
+                X, Y = CRG.getTrainingData(_datasetSize, self.inputs, self.outputs, simulate_acceleration=True)
+                self.model.fit(X, Y, epochs=10, verbose=2, shuffle=True, batch_size=_iterations-i)
                 # save model to single file
                 self.model.save(self.model_filename)
                 self.model.save(self.model_filename + 'bak')
@@ -53,19 +60,19 @@ class LstmEllipticalPredictor(Predictor):
     def predict(self, input):
         Predictor.validateInput(input)
         points = len(input[0])
-        if (points < lstmInputPoints):
-            adapted = np.zeros((1, lstmInputPoints, 2))
+        if (points < self.inputs):
+            adapted = np.zeros((1, self.inputs, 2))
             for i in range(0, points):
                 adapted[0,i] = input[0,i]
             input = adapted
-        if (points > lstmInputPoints):
-            adapted = input[0][points - lstmInputPoints:]
-            adapted = adapted.reshape(1,lstmInputPoints,2)
+        if (points > self.inputs):
+            adapted = input[0][points - self.inputs:]
+            adapted = adapted.reshape(1,self.inputs,2)
             input = adapted
         return self.model.predict(input, verbose=0)
 
     def runTest(self):
-        testX, testY = CRG.getTrainingData(1, lstmInputPoints, lstmPredictedPoints)
+        testX, testY = CRG.getTrainingData(1, self.inputs, self.outputs)
 
         # make predictions:
         predictions = self.predict(testX[3].reshape(1,lstmInputPoints,2))
@@ -91,7 +98,7 @@ class LstmEllipticalPredictor(Predictor):
             )
 
 #'''
-pred = LstmEllipticalPredictor()
+#pred = LstmEllipticalPredictor()
 #pred.runTest()
 #'''
 
