@@ -21,11 +21,11 @@ np.set_printoptions(precision=2, suppress=True)
 
 
 lstmInputPoints = 3
-lstmPredictedPoints = 1
+lstmPredictedPoints = 3
 
 class LstmEllipticalPredictor(Predictor):
-    #TRAIN_ME = True
-    TRAIN_ME = False
+    TRAIN_ME = True
+    #TRAIN_ME = False
     model_filename = 'models/lstm_elliptical_predictor.h5'
     inputPoints=lstmInputPoints
     outputPoints=lstmPredictedPoints
@@ -47,7 +47,7 @@ class LstmEllipticalPredictor(Predictor):
             self.model.compile(loss='mse', optimizer='adam')
             # fit model
         if self.TRAIN_ME:
-            _datasetSize = 90
+            _datasetSize = 900
             _iterations = 5
             X, Y = CRG.getTrainingData(_datasetSize, self.inputPoints, self.outputPoints, simulate_acceleration=False)
             for i in range (0, _iterations):

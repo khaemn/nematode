@@ -45,6 +45,8 @@ def circleFrom3Pts(p1=Point(0, 0), p2=Point(0, 0), p3=Point(0, 0)):
     D = _x12y12 * (p3.x * p2.y - p2.x * p3.y) + _x22y22 * (p1.x * p3.y - p3.x * p1.y) + _x32y32 * (
     p1.y * p2.x - p1.x * p2.y)
 
+    A = max(0.000001, A) # to prevent zero division if the points are on a line
+
     _x = (-1) * (B / (2 * A))
     _y = (-1) * (C / (2 * A))
     _r = sqrt(((B ** 2) + (C ** 2) - (4 * A * D)) / (4 * (A ** 2)))
@@ -61,3 +63,8 @@ def nextNPointsOnCircle(circle=Circle(0, 0, 1), startingAngle=0, angleStep=0, co
         points.append(next)
 
     return points
+
+
+    # So I was finally able to figure it out: The solution is to uncheck
+    # the "PyQt compatible" option under Python Debugger in the Project
+    # Settings of PyCharm. This option seems to cause the mentioned issues when using pyqt and debug mode.

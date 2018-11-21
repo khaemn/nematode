@@ -63,8 +63,9 @@ class PrimitiveLinearPredictor(Predictor):
         #return np.array([[nextX, nextY], [futureX, futureY], [postFutureX, postFutureY]])
         return np.array([[nextX, nextY]])
 
-
+import matplotlib.pyplot as plt
 class PrimitiveCircularPredictor(Predictor):
+    __debugPlot = False
     def predict(self, input=np.zeros((1,2,2))):
         Predictor.validateInput(input, 3)
 
@@ -86,14 +87,26 @@ class PrimitiveCircularPredictor(Predictor):
         print("Circle from 3 points:", circle)
         firstAngleDelta = angleDelta(p1, p2, center)
         secondAngleDelta = angleDelta(p2, p3, center)
-        angleStep = inclination(center, p3) - inclination(center, p3)
+        angleStep = inclination(center, p3) - inclination(center, p2)
         accelerationRate = secondAngleDelta / firstAngleDelta
+
+        plt.plot([p1.x], [p1.y], 'ro')
+        plt.plot([p2.x], [p2.y], 'go')
+        plt.plot([p3.x], [p3.y], 'bo')
+
         prediction = nextNPointsOnCircle( circle,
-                                          inclination(p3, center),
+                                          inclination(center, p3),
                                           angleStep,
                                           self.outputPoints,
                                           accelerationRate)
+        predsAsNp = np.array(prediction)
 
-        return np.array(prediction)
-
+        if self.__debugPlot: # debug plot should be closed before next step!
+            xpred, ypred = predsAsNp[:,0], predsAsNp[:,1]
+            plt.plot(xpred, ypred, 'yo')
+            plt.title('Circular primitive prediction')
+            plt.gca().invert_yaxis()
+            plt.axes().set_aspect('equal', 'datalim')
+            plt.show()
+        return predsAsNp
 

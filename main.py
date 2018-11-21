@@ -8,7 +8,7 @@ from predictors import *
 from enum import Enum
 #from lstm_bilinear_predictor import *
 #from lstm_mouse_predictor import *
-#from lstm_elliptical_predictor import *
+from lstm_elliptical_predictor import *
 
 import numpy as np
 import json
@@ -98,8 +98,8 @@ class GameEngine(QObject):
     # predictor = LstmLinearPredictor()
     # predictor = PrimitiveLinearPredictor()
     # predictor = LstmMousePredictor()
-    #predictor = LstmEllipticalPredictor()
-    predictor = PrimitiveCircularPredictor(inputPointsForPredictor, outputPointsForPredictor)
+    predictor = LstmEllipticalPredictor()
+    #predictor = PrimitiveCircularPredictor(inputPointsForPredictor, 3)
     lastPositions = []
 
     prevPosition = [0.0, 0.0]
@@ -114,6 +114,8 @@ class GameEngine(QObject):
     statisticHeader = "time,x,y,course,speed,acceleration,health,fuel,nextX,nextY,hit"
     statisticFormat = "%d,%d,%d,%d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d"
 
+    wasHit = False
+
     @pyqtSlot(str)
     def log(self, message):
         print(message)
@@ -124,7 +126,6 @@ class GameEngine(QObject):
         if len(self.route) < 2 :
             self.stopPlay.emit(True)
 
-        wasHit = False
 
         if self.ship.isLanded and self.ship.isAlive:
             self.stopPlay.emit(True)
@@ -147,6 +148,7 @@ class GameEngine(QObject):
 
         if self.step == GameStep.Flying:
             # The ship performs its movement
+            self.wasHit = False
             self.ship.fly()
             self.updateShipUi(self.ship) # to fly
             self.step = GameStep.Shooting
@@ -162,7 +164,7 @@ class GameEngine(QObject):
             hitAccuracy = distance(Point(self.lastNext[0], self.lastNext[1]),
                                    Point(self.ship.position[0], self.ship.position[1]))
             if hitAccuracy < (self.cannonBlastRadius + self.ship.hitRadius):
-                wasHit = True
+                self.wasHit = True
                 self.ship.takeDamage(10)  # TODO::!!!
                 self.updateShipUi(self.ship)  # to indicate damage
             return
@@ -206,7 +208,7 @@ class GameEngine(QObject):
                                         self.ship.fuel,
                                         prediction[0][0],
                                         prediction[0][1],
-                                        wasHit
+                                        self.wasHit
                                         )
             )
 
