@@ -3,12 +3,12 @@ from PyQt5.QtQml import QQmlListProperty, QQmlApplicationEngine, qmlRegisterType
 from PyQt5.QtCore import QObject, QTimer, pyqtProperty, pyqtSignal, pyqtSlot
 
 from spaceships import *
-from generators import helpermath as hm
+from helpermath import *
 from predictors import *
 from enum import Enum
 #from lstm_bilinear_predictor import *
 #from lstm_mouse_predictor import *
-from lstm_elliptical_predictor import *
+#from lstm_elliptical_predictor import *
 
 import numpy as np
 import json
@@ -47,6 +47,8 @@ class GameEngine(QObject):
     launchBay = [0, 0, 100, 100]
     landingZone = [700, 700, 100, 100]
     settingsFile = "settings.json"
+    inputPointsForPredictor=3
+    outputPointsForPredictor=1
 
     def __init__(self):
         QObject.__init__(self)
@@ -89,13 +91,15 @@ class GameEngine(QObject):
     areaWidth = 800
     areaHeight = 800
 
-    ship = SimpleShip()
+    #ship = SimpleShip()
+    ship = DebugShip()
 
     # TODO: move to Cannon
     # predictor = LstmLinearPredictor()
     # predictor = PrimitiveLinearPredictor()
     # predictor = LstmMousePredictor()
-    predictor = LstmEllipticalPredictor()
+    #predictor = LstmEllipticalPredictor()
+    predictor = PrimitiveCircularPredictor(inputPointsForPredictor, outputPointsForPredictor)
     lastPositions = []
 
     prevPosition = [0.0, 0.0]
@@ -155,7 +159,8 @@ class GameEngine(QObject):
             # Cannon's bullet hits the predicted target's position
             # TODO: cannon.observeHit()
             self.showBlastAt.emit(self.lastNext[0], self.lastNext[1], self.cannonBlastRadius)
-            hitAccuracy = hm.distance(self.lastNext, self.ship.position)
+            hitAccuracy = distance(Point(self.lastNext[0], self.lastNext[1]),
+                                   Point(self.ship.position[0], self.ship.position[1]))
             if hitAccuracy < (self.cannonBlastRadius + self.ship.hitRadius):
                 wasHit = True
                 self.ship.takeDamage(10)  # TODO::!!!
@@ -186,7 +191,7 @@ class GameEngine(QObject):
             for npPoint in prediction:
                 uiPoint = UiPoint(npPoint[0], npPoint[1])
                 self._predictionPoints.append(uiPoint)
-            print("UiPoints are about to be sent: ", [str(pt) for pt in self._predictionPoints])
+            print("Predicted UiPoints are about to be sent:\n", [str(pt) for pt in self._predictionPoints])
             self.predictionPointsChanged.emit()
 
             # "time,x,y,course,speed,acceleration,health,fuel,nextX,nextY,hit"

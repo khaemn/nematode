@@ -1,15 +1,12 @@
 # http://www.ambrsoft.com/trigocalc/circle3d.htm
 from math import sqrt, atan2, sin, cos
 import math
-from collections import namedtuple
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from helpermath import *
 
 #random.seed(777)
-
-Point = namedtuple('Point', 'x, y')
-Circle = namedtuple('Circle', 'x, y, r')
 
 # Distances of a random segment that allows processing
 minEligibleDistance = 0.01
@@ -20,25 +17,6 @@ maxEligibleRadiusRatio = 10.0
 __debugPrint = False
 __debugPlotRawGeneration = False
 __debugPlotDataset = False
-
-# Math helpers: distance, inclination, angleDelta
-def distance(p1, p2):
-    return math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
-    return math.hypot(p2.x - p1.x, p2.y - p1.y)
-
-
-def inclination(p1=Point(0, 0), p2=Point(1, 1)):
-    return atan2(p2.y - p1.y, p2.x - p1.x)
-
-
-def angleDelta(p1=Point(1, 0), p2=Point(0, 1), center=Point(0, 0)):
-    firstAngle = inclination(center, p1)
-    secondAngle = inclination(center, p2)
-    return secondAngle - firstAngle
-
-
-def arcAngle(dist, radius):
-    return 2 * math.asin(dist / (radius * 2))
 
 # Linear generation
 
@@ -81,39 +59,11 @@ def twoComplementaryCirclesFrom2Points(p1, p2, r=1.0):
     return c1, c2
 
 
-def circleFrom3Pts(p1=Point(0, 0), p2=Point(0, 0), p3=Point(0, 0)):
-    _x12y12 = (p1.x ** 2 + p1.y ** 2)
-    _x22y22 = (p2.x ** 2 + p2.y ** 2)
-    _x32y32 = (p3.x ** 2 + p3.y ** 2)
-
-    A = p1.x * (p2.y - p3.y) - p1.y * (p2.x - p3.x) + p2.x * p3.y - p3.x * p2.y
-    B = _x12y12 * (p3.y - p2.y) + _x22y22 * (p1.y - p3.y) + _x32y32 * (p2.y - p1.y)
-    C = _x12y12 * (p2.x - p3.x) + _x22y22 * (p3.x - p1.x) + _x32y32 * (p1.x - p2.x)
-    D = _x12y12 * (p3.x * p2.y - p2.x * p3.y) + _x22y22 * (p1.x * p3.y - p3.x * p1.y) + _x32y32 * (
-    p1.y * p2.x - p1.x * p2.y)
-
-    _x = (-1) * (B / (2 * A))
-    _y = (-1) * (C / (2 * A))
-    _r = sqrt(((B ** 2) + (C ** 2) - (4 * A * D)) / (4 * (A ** 2)))
-    return Circle(_x, _y, _r)
-
-
-def nextNPointsOnCircle(circle=Circle(0, 0, 1), startingAngle=0, angleStep=0, count=1, accelerationRatio=1.0):
-    points = []
-    delta = 0
-    for i in range(0, count):
-        delta += angleStep * (accelerationRatio ** i)
-        next = Point(circle.x + circle.r * cos(startingAngle + delta),
-                  circle.y + circle.r * sin(startingAngle + delta))
-        points.append(next)
-
-    return points
-
 # _m here corresponds to LSTM input batch size, and _m - to prediction length.
 # returns an array with many pairs of vectors each with of _m+_n points, that are situated on a circle.
 def manyNplusMPointsOnTwoRandomComplementaryArcs(_n, _m, simulate_acceleration=False):
-    _many = 5
-    _accelerationRatio = 1.0 if not simulate_acceleration else (random.random() * 2)
+    _many = 10
+    _accelerationRatio = 1.0 if not simulate_acceleration else (1 + ((random.random() +0.5) / 10))
     p1, p2 = randomSegment()
     length = distance(p1, p2)
     if __debugPrint: print("Segment: ", p1, p2, " length: ", distance(p1, p2))
@@ -176,13 +126,6 @@ def getTrainingData(datasetSize, inputCount, outputCount, simulate_acceleration=
                 if __debugPrint: print("newline\n", newLine)
                 normalizedData.append(newLine)
         dataset = np.array(normalizedData)
-            # normalizedPointsOnCir1 = [Point(pt.x - absMax, pt.y - absMax) for pt in pointsOnCir1]
-            #
-            # maxX, maxY = abs(max(pointsOnCir2).x), abs(max(pointsOnCir2).y)
-            # absMax = max(maxX, maxY)
-            # normalizedPointsOnCir2 = [Point(pt.x - absMax, pt.y - absMax) for pt in pointsOnCir2]
-            # points.append(normalizedPointsOnCir1)
-            # points.append(normalizedPointsOnCir2)
     if __debugPlotDataset:
         if __debugPrint: print("Dataset:\n")
         for line in dataset:

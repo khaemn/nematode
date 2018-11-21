@@ -1,4 +1,4 @@
-from generators import helpermath as hm
+from helpermath import *
 import math
 
 def inZone(point, zone):
@@ -76,8 +76,10 @@ class BaseShip:
         print("ShipModel position is", self.position, "(was ", self.prevPosition, ")", "(will be", nextPosition ,")")
 
         if self.fuel > 0: # No change to course/speed possible without fuel
-            self.speed = hm.distance(self.position, self.prevPosition)
-            self.course = hm.inclination(self.position, nextPosition)
+            self.speed = distance(Point(self.position[0], self.position[1]),
+                                  Point(self.prevPosition[0], self.prevPosition[1]))
+            self.course = inclination(Point(self.position[0], self.position[1]),
+                                      Point(nextPosition[0], nextPosition[1]))
             self.acceleration = abs(self.speed - self.prevSpeed) + abs(self.course - self.prevCourse)
             print("ShipModel overload is", self.acceleration)
             self.fuel = max(0, self.fuel - self.acceleration / 10)  # TODO: investigate if ok
@@ -116,6 +118,11 @@ class SimpleShip(BaseShip):
         super().__init__()
 
 
+class DebugShip(BaseShip): # Increased fuel and health
+    def __init__(self):
+        super().__init__()
+        self.initialFuel = 1000
+        self.initialHealth = 1000
 
 
 

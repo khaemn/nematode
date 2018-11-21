@@ -1,10 +1,21 @@
 import numpy as np
+import random
+from helpermath import *
 
 # Prediction points naming convention:
 # "Next" point mean a predicted point right next after the last of given points.
 # "Future" point is the one after "Next", e.g. two steps later after the last of given points.
 
 class Predictor:
+    inputPoints=1
+    outputPoints=1
+
+
+    def __init__(self, inputPoints, outputPoints):
+        self.inputPoints = inputPoints
+        self.outputPoints = outputPoints
+
+
     # Takes a 2D trajectory vector with Carthesian points
     # Returns a 2D array of predicted Carthesian points
     # note: points are expected to be normalized to 0..1 range
@@ -14,12 +25,24 @@ class Predictor:
         return np.ones((2,2))
 
     @staticmethod
-    def validateInput(input=np.zeros((1,2,2))):
-        valid = len(input.shape) == 3 and input.size > 0 and len(input[0][0]) == 2
+    def validateInput(input=np.zeros((1,2,2)), minSize = 2):
+        valid = len(input.shape) == 3 and input.size > minSize and len(input[0][0]) == 2
         if not valid: raise "Invalid input for Predictor! Expected 3D numpy array of shape (<n>, <m>, 2)"
 
+    def adapt(self, input):
+        totalPoints = len(input[0])
+        if (totalPoints < self.inputPoints):
+            adapted = np.zeros((1, self.inputPoints, 2))
+            for i in range(0, totalPoints):
+                adapted[0,i] = input[0,i]
+            input = adapted
+        if (totalPoints > self.inputPoints):
+            adapted = input[0][totalPoints - self.inputPoints:]
+            adapted = adapted.reshape(1, self.inputPoints, 2)
+            input = adapted
+        return input
 
-import random
+
 class PrimitiveLinearPredictor(Predictor):
     noiseRatio = 0.02
     def predict(self, input=np.zeros((1,2,2))):
@@ -39,3 +62,38 @@ class PrimitiveLinearPredictor(Predictor):
 
         #return np.array([[nextX, nextY], [futureX, futureY], [postFutureX, postFutureY]])
         return np.array([[nextX, nextY]])
+
+
+class PrimitiveCircularPredictor(Predictor):
+    def predict(self, input=np.zeros((1,2,2))):
+        Predictor.validateInput(input, 3)
+
+        if(len(input[0]) < self.inputPoints):
+            return np.array([[0, 0], [1, 1]])
+
+        input = self.adapt(input)
+
+        (p1, p2, p3) = (Point(input[0][0][0],
+                              input[0][0][1]),
+                        Point(input[0][1][0],
+                              input[0][1][1]),
+                        Point(input[0][2][0],
+                              input[0][2][1])
+                        )
+
+        circle = circleFrom3Pts(p1, p2, p3)
+        center = Point(circle.x, circle.y)
+        print("Circle from 3 points:", circle)
+        firstAngleDelta = angleDelta(p1, p2, center)
+        secondAngleDelta = angleDelta(p2, p3, center)
+        angleStep = inclination(center, p3) - inclination(center, p3)
+        accelerationRate = secondAngleDelta / firstAngleDelta
+        prediction = nextNPointsOnCircle( circle,
+                                          inclination(p3, center),
+                                          angleStep,
+                                          self.outputPoints,
+                                          accelerationRate)
+
+        return np.array(prediction)
+
+
