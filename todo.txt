@@ -1,6 +1,12 @@
-A   Launch/landing proper init
+++   Launch/landing proper init
 A   route file loading
 A   overload calculation
 A   hitmiss stat calculation
+
+linear accelerated generation
+circular accelerated generation
+
+teach on collab GPU with linears and circulars
+
 
 B   hitmiss, speed, course and so on disaplying on UI

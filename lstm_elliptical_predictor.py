@@ -25,7 +25,7 @@ lstmPredictedPoints = 3
 
 class LstmEllipticalPredictor(Predictor):
     TRAIN_ME = True
-    #TRAIN_ME = False
+    TRAIN_ME = False
     model_filename = 'models/lstm_elliptical_predictor.h5'
 
     def __init__(self, inputs=lstmInputPoints, outputs=lstmPredictedPoints):
