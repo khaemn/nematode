@@ -10,7 +10,6 @@ class Predictor:
     inputPoints=1
     outputPoints=1
 
-
     def __init__(self, inputPoints, outputPoints):
         self.inputPoints = inputPoints
         self.outputPoints = outputPoints
@@ -48,8 +47,8 @@ class PrimitiveLinearPredictor(Predictor):
     def predict(self, input=np.zeros((1,2,2))):
         Predictor.validateInput(input)
 
-        prevX, prevY = input[0][0][0], input[0][0][1]
-        currX, currY = input[0][1][0], input[0][1][1]
+        prevX, prevY = input[0][-2][0], input[0][-2][1]
+        currX, currY = input[0][-1][0], input[0][-1][1]
 
         nextX = currX + (currX - prevX) + self.noiseRatio * (0.5 - random.random())
         nextY = currY + (currY - prevY) + self.noiseRatio * (0.5 - random.random())

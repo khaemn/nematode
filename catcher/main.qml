@@ -88,7 +88,7 @@ ApplicationWindow {
             id: _area
 
             property int inputDivider: 0
-            property int inputDividerThreshold: 5
+            property int inputDividerThreshold: 10
 
             property bool isEditingInProgress: false
 

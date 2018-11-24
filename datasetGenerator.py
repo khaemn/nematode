@@ -44,6 +44,62 @@ def random3pointsNotOnALine():
             p3 = Point(random.random(), random.random())
     return p1, p2, p3
 
+# Generates linear 3-points sequence.
+# Assume that x1 = 0, x2 = 1, x3 = 2 on a Carthesian plane.
+# Three Y coordinates are returned for a line on this plane.
+def randomNpointsOnALine(n = 3, simulate_acceleration=True):
+    k = random.random()
+    b = random.random()
+    acceleration = 1.0 if not simulate_acceleration else (1 + ((random.random() + 0.5) / 5))
+
+    # using y = kx + b equation with acceleration of each next X
+    p1, p2 = randomSegment()
+    xDistance = p2.x - p1.x
+    yDistance = p2.y - p1.y
+    prevPoint = p2
+
+    output = [p1, p2]
+    for i in range (2, n):
+        if __debugPrint:
+            print("Accel: ",acceleration)
+            print("xDistance, y: ", xDistance, yDistance)
+        xDistance = xDistance * acceleration
+        yDistance = yDistance * acceleration
+        newPoint = Point(prevPoint.x + xDistance,
+                         prevPoint.y + yDistance)
+        output.append(newPoint)
+        prevPoint = newPoint
+    return output
+
+
+def getLinearTrainingData(datasetSize, inputCount, outputCount, simulate_acceleration=False, normalize=True):
+    data = []
+    for i in range(0, datasetSize):
+        data.append(randomNpointsOnALine(inputCount + outputCount, simulate_acceleration))
+
+    data = np.array(data)
+    if normalize:
+        threshold = 1.0
+        absMax = abs(max(data.min(), data.max(), key=abs))
+        if __debugPrint:
+            print("Absoulte, min, max:", absMax, data.min(), data.max(),)
+            print("Dataset before normalizing:\n", data)
+        if absMax > threshold:
+            data = data / absMax
+        if __debugPrint:
+            print("Dataset after normalizing:\n", data)
+    if __debugPlotRawGeneration:
+        for vector in data:
+            startingPointsCount = 2
+            plt.plot(vector[:startingPointsCount,0], vector[:startingPointsCount,1], 'ro--')
+            plt.plot(vector[startingPointsCount-1:, 0], vector[startingPointsCount-1:, 1], 'o--')
+        plt.title('Generated data')
+        plt.show()
+    Xr, yr = data[:, :inputCount], data[:, inputCount:]
+    Xr = Xr.reshape((datasetSize, inputCount, 2))
+    yr = yr.reshape((len(yr), outputCount*2))
+    return Xr, yr
+
 # Circular generation functions
 
 def twoComplementaryCirclesFrom2Points(p1, p2, r=1.0):
@@ -76,54 +132,10 @@ def twoComplementaryCirclesFrom2Points(p1, p2, r=1.0):
 
 # _m here corresponds to LSTM input batch size, and _m - to prediction length.
 # returns an array with many pairs of vectors each with of _m+_n points, that are situated on a circle.
-def manyNplusMPointsOnTwoRandomComplementaryArcs(_n, _m, simulate_acceleration=False):
-    _many = 1
-    _accelerationRatio = 1.0 if not simulate_acceleration else (1 + ((random.random() +0.5) / 10))
-    p1, p2 = randomSegment()
-    length = distance(p1, p2)
-    if __debugPrint: print("Segment: ", p1, p2, " length: ", distance(p1, p2))
-    # after randomSegment(), two points are never coincident, so next call should never raise exception.
-    points = []
-    startingRadius = length
-    for ratio in range(0, _many):
-        radius = startingRadius * ((ratio+1) * 2)
-        cir1, cir2 = twoComplementaryCirclesFrom2Points(p1, p2, radius)
-        cir1center, cir2center = Point(cir1.x, cir1.y), Point(cir2.x, cir2.y)
-        if __debugPrint: print("Complementary circles: ", cir1, cir2)
-        pointsOnCir1 = [p1, p2]  # because they are random and on the circle anyway
-        pointsOnCir2 = [p1, p2]  # because they are random and on the circle anyway
-        pointsOnCir1 += (nextNPointsOnCircle(circle=cir1,
-                                             startingAngle=inclination(cir1center, p2),
-                                             angleStep=angleDelta(p1, p2, Point(cir1.x, cir1.y)),
-                                             count=(_n - 2 + _m), # because 2 points p1 and p2 are alreay in the array
-                                             accelerationRatio=_accelerationRatio)
-                            )
-        if __debugPrint: print(_n+_m, " points on circle 1: ", pointsOnCir1)
-        # pointsOnCir2 += (nextNPointsOnCircle(circle=cir2,
-        #                                         startingAngle=inclination(p2),
-        #                                         angleStep = angleDelta(p1, p2, Point(cir2.x, cir2.y)),
-        #                                         count=(_n - 2 + _m),
-        #                                         # because 2 points p1 and p2 are alreay in the array
-        #                                         accelerationRatio=_accelerationRatio)
-        #                     )
-        # if __debugPrint: print(_n+_m, " points on circle 2: ", pointsOnCir2)
-        points.append(pointsOnCir1)
-        # points.append(pointsOnCir2)
-    if __debugPlotRawGeneration:
-        for vector in points:
-            if __debugPrint: print(vector)
-            for pt in vector:
-                plt.plot(pt.x, pt.y, 'bo')
-        plt.title('Generated data')
-        plt.show()
-    return points
-
-# _m here corresponds to LSTM input batch size, and _m - to prediction length.
-# returns an array with many pairs of vectors each with of _m+_n points, that are situated on a circle.
 def manyNplusMPointsOnCircles(_n, _m, simulate_acceleration=False):
     if _m+_n < 3: raise ValueError("No less than 3 pts could be generated!")
     _many = 1
-    _accelerationRatio = 1.0 if not simulate_acceleration else (1 + ((random.random() +0.5) / 10))
+    _accelerationRatio = 1.0 if not simulate_acceleration else (1 + ((random.random() +0.5) / 5))
 
     points = []
 
@@ -156,11 +168,10 @@ def manyNplusMPointsOnCircles(_n, _m, simulate_acceleration=False):
         plt.show()
     return points
 
-def getTrainingData(datasetSize, inputCount, outputCount, simulate_acceleration=False, normalize=True):
+def getCircularTrainingData(datasetSize, inputCount, outputCount, simulate_acceleration=False, normalize=True):
     data = []
     _normalizationThreshold = 2.0
     for i in range (0, datasetSize):
-        #data += manyNplusMPointsOnTwoRandomComplementaryArcs(inputCount, outputCount, simulate_acceleration)
         data += manyNplusMPointsOnCircles(inputCount, outputCount, simulate_acceleration)
     dataset = np.array(data)
     # Normalization
@@ -199,4 +210,7 @@ def getTrainingData(datasetSize, inputCount, outputCount, simulate_acceleration=
     return Xr, Yr
 
 
-a = getTrainingData(100, 5, 5)
+# Generates necessary training datasets
+
+#a = getCircularTrainingData(100, 5, 5)
+b = getLinearTrainingData(1, 3, 3, simulate_acceleration=True)

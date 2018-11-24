@@ -57,7 +57,7 @@ class BaseShip:
             self.position = self.route[min(self.time, maxTime)]
             nextPosition = self.route[min(self.time + 1, maxTime)]
         else:
-            # Without fuel - move with constant speed and course until death.
+            # Without fuel - move with constant speed and course (until death).
             self.speed = self.speed * 0.9
             xOffset = self.speed * math.cos(math.radians(self.course))
             yOffset = self.speed * math.sin(math.radians(self.course))
@@ -80,7 +80,7 @@ class BaseShip:
                                   Point(self.prevPosition[0], self.prevPosition[1]))
             self.course = inclination(Point(self.position[0], self.position[1]),
                                       Point(nextPosition[0], nextPosition[1]))
-            self.acceleration = abs(self.speed - self.prevSpeed) + abs(self.course - self.prevCourse)
+            self.acceleration = abs(self.speed - self.prevSpeed) * math.pi + abs(self.course - self.prevCourse)
             print("ShipModel overload is", self.acceleration)
             self.fuel = max(0, self.fuel - self.acceleration / 10)  # TODO: investigate if ok
             self.prevSpeed = self.speed
@@ -122,7 +122,7 @@ class DebugShip(BaseShip): # Increased fuel and health
     def __init__(self):
         super().__init__()
         self.initialFuel = 1000
-        self.initialHealth = 1000
+        self.initialHealth = 100
 
 
 

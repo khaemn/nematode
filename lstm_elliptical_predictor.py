@@ -6,8 +6,8 @@ elliptical generated routes
 import os.path
 import numpy as np
 from predictors import Predictor
-import circularRouteGenerator as CRG
-from circularRouteGenerator import Circle, nextNPointsOnCircle
+import datasetGenerator as CRG
+from datasetGenerator import nextNPointsOnCircle
 from helpermath import *
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Flatten, TimeDistributed, AveragePooling1D
@@ -27,8 +27,6 @@ class LstmEllipticalPredictor(Predictor):
     TRAIN_ME = True
     #TRAIN_ME = False
     model_filename = 'models/lstm_elliptical_predictor.h5'
-    inputPoints=lstmInputPoints
-    outputPoints=lstmPredictedPoints
 
     def __init__(self, inputs=lstmInputPoints, outputs=lstmPredictedPoints):
         super().__init__(inputs, outputs)
@@ -47,11 +45,18 @@ class LstmEllipticalPredictor(Predictor):
             self.model.compile(loss='mse', optimizer='adam')
             # fit model
         if self.TRAIN_ME:
-            _datasetSize = 900
-            _iterations = 5
-            X, Y = CRG.getTrainingData(_datasetSize, self.inputPoints, self.outputPoints, simulate_acceleration=False)
+            _datasetSize = 5000
+            _iterations = 100
+            X, Y = CRG.getCircularTrainingData(_datasetSize, self.inputPoints, self.outputPoints, simulate_acceleration=True)
+            #print("INTIAL xy:\n", X, "\n\n", Y)
+            Xl, Yl = CRG.getLinearTrainingData(_datasetSize*2, self.inputPoints, self.outputPoints, simulate_acceleration=True)
+            #print("INTIAL LL:\n", Xl, "\n\n", Yl)
+            X = np.append(X, Xl, axis=0)
+            Y = np.append(Y, Yl, axis=0)
+            #print("DATASET:\n", X, "\n\n", Y)
+            #quit()
             for i in range (0, _iterations):
-                batchSize = max(1, _iterations - int(i / 100) * 100)
+                batchSize = 1#max(1, _iterations - int(i / 10) * 10)
                 print("Iteration ", i, " of ", _iterations, " batch size: ", batchSize)
                 self.test()
                 self.model.fit(X, Y, epochs=10, verbose=2, shuffle=True, batch_size=batchSize)
@@ -62,16 +67,7 @@ class LstmEllipticalPredictor(Predictor):
 
     def predict(self, input):
         Predictor.validateInput(input)
-        totalPoints = len(input[0])
-        if (totalPoints < self.inputPoints):
-            adapted = np.zeros((1, self.inputPoints, 2))
-            for i in range(0, totalPoints):
-                adapted[0,i] = input[0,i]
-            input = adapted
-        if (totalPoints > self.inputPoints):
-            adapted = input[0][totalPoints - self.inputPoints:]
-            adapted = adapted.reshape(1, self.inputPoints, 2)
-            input = adapted
+        input = self.adapt(input)
         return self.model.predict(input, verbose=0)
 
 
@@ -81,14 +77,21 @@ class LstmEllipticalPredictor(Predictor):
                                         angleStep=0.2618,  # 15 degr
                                         count=lstmInputPoints + lstmPredictedPoints,
                                         accelerationRatio=1.0)
-        print("Test input: ", testInput)
+        #print("Test input: ", testInput)
         testData = np.array(testInput)
         testX, testY = testData[:lstmInputPoints], testData[lstmInputPoints:]
         testX = testX.reshape((1, lstmInputPoints, 2))
         testY = testY.reshape((1, lstmPredictedPoints * 2))
-        prediction = self.predict(testX)
-        print("Prediction:\n", prediction)
-        print("Expected:\n", testY)
+        pred = self.predict(testX)
+        err = (testY - pred)
+        maxErr = abs(max(err.min(), err.max(), key=abs))
+        print("Expected circular:\n", testY, "\nPredicted circular:\n", pred, "\nError:\n", (testY - pred), " max Err ", maxErr, "\n\n")
+
+        textX, testY = CRG.getLinearTrainingData(1, self.inputPoints, self.outputPoints)
+        pred = self.predict(textX)
+        err = (testY - pred)
+        maxErr = abs(max(err.min(), err.max(), key=abs))
+        print("Expected linear:\n", testY, "\nPredicted linear:\n", pred,"\nError:\n", (testY - pred), " max Err ", maxErr, "\n\n")
 
 # '''
 pred = LstmEllipticalPredictor()

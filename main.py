@@ -6,7 +6,7 @@ from spaceships import *
 from helpermath import *
 from predictors import *
 from enum import Enum
-#from lstm_bilinear_predictor import *
+from lstm_bilinear_predictor import *
 #from lstm_mouse_predictor import *
 from lstm_elliptical_predictor import *
 
@@ -48,7 +48,7 @@ class GameEngine(QObject):
     landingZone = [700, 700, 100, 100]
     settingsFile = "settings.json"
     inputPointsForPredictor=3
-    outputPointsForPredictor=1
+    outputPointsForPredictor=3
 
     def __init__(self):
         QObject.__init__(self)
@@ -95,11 +95,11 @@ class GameEngine(QObject):
     ship = DebugShip()
 
     # TODO: move to Cannon
-    # predictor = LstmLinearPredictor()
-    # predictor = PrimitiveLinearPredictor()
+    # predictor = LstmLinearPredictor(inputPointsForPredictor, outputPointsForPredictor)
+    # predictor = PrimitiveLinearPredictor(inputPointsForPredictor, outputPointsForPredictor)
     # predictor = LstmMousePredictor()
-    predictor = LstmEllipticalPredictor()
-    #predictor = PrimitiveCircularPredictor(inputPointsForPredictor, 3)
+    predictor = LstmEllipticalPredictor(inputPointsForPredictor, outputPointsForPredictor)
+    # predictor = PrimitiveCircularPredictor(inputPointsForPredictor, outputPointsForPredictor)
     lastPositions = []
 
     prevPosition = [0.0, 0.0]
