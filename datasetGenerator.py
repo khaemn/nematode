@@ -211,6 +211,6 @@ def getCircularTrainingData(datasetSize, inputCount, outputCount, simulate_accel
 
 
 # Generates necessary training datasets
-
-#a = getCircularTrainingData(100, 5, 5)
-b = getLinearTrainingData(1, 3, 3, simulate_acceleration=True)
+if __name__ == '__main__':
+    a = getCircularTrainingData(100, 5, 5)
+    b = getLinearTrainingData(1, 3, 3, simulate_acceleration=True)

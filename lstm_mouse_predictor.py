@@ -89,10 +89,9 @@ class LstmMousePredictor(Predictor):
                 % (firstX, firstY, secondX, secondY, predictedX, predictedY, expectedX, expectedY, error)
             )
 
-'''
-pred = LstmMousePredictor()
-pred.runTest()
-'''
+if __name__ == '__main__':
+    pred = LstmMousePredictor()
+    pred.runTest()
 
 
 

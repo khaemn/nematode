@@ -61,10 +61,10 @@ class LstmLinearPredictor(Predictor):
         pred = self.predict(textX)
         print("Expected:\n", textY, "\nPredicted:\n", pred)
 
-#'''
-#pred = LstmLinearPredictor()
-#pred.test()
-#'''
+if __name__ == '__main__':
+    pred = LstmLinearPredictor()
+    pred.test()
+
 
 
 

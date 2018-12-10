@@ -22,7 +22,7 @@ def distance(p1, p2):
 
 
 def inclination(p1=Point(0, 0), p2=Point(1, 1)):
-    return atan2(p2.y - p1.y, p2.x - p1.x)
+    return atan2(p2.y - p1.y, p2.x - p1.x) * (180 / math.pi)
 
 
 def angleDelta(p1=Point(1, 0), p2=Point(0, 1), center=Point(0, 0)):

@@ -10,3 +10,8 @@ teach on collab GPU with linears and circulars
 
 
 B   hitmiss, speed, course and so on disaplying on UI
+
+
+path add C:\WinAVR-20100110\bin;C:\WinAVR-20100110\utils\bin;
+
+C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Python3\Scripts\;C:\Python3\;%JAVA_HOME%\bin;C:\Program Files (x86)\Intel\iCLS Client\;C:\Program Files\Intel\iCLS Client\;%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\;C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\DAL;C:\Program Files\Intel\Intel(R) Management Engine Components\DAL;C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\IPT;C:\Program Files\Intel\Intel(R) Management Engine Components\IPT;C:\Program Files\CMake\bin;C:\Qt\Qt.5.9.1\Tools\mingw530_32\bin;C:\Program Files (x86)\IVI Foundation\VISA\WinNT\Bin;M:\Programs\FFMPEG\ffmpeg-20171115-ff8f40a-win64-static\bin;C:\Program Files\nodejs\;C:\Program Files (x86)\Microchip\MPLAB C32 Suite\bin;

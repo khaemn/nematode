@@ -7,7 +7,7 @@ import os.path
 import numpy as np
 from predictors import Predictor
 import datasetGenerator as CRG
-from datasetGenerator import nextNPointsOnCircle
+import random
 from helpermath import *
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Dropout, Flatten, TimeDistributed, AveragePooling1D
@@ -17,42 +17,37 @@ from keras.optimizers import Adam
 
 np.set_printoptions(precision=2, suppress=True)
 
-#random.seed(777)
+random.seed(777)
 
+_inputPoints = 3
+_predictedPoints = 3
 
-
-lstmInputPoints = 3
-lstmPredictedPoints = 3
-
-class LstmEllipticalPredictor(Predictor):
+class DenseMixedPredictor(Predictor):
     TRAIN_ME = True
     TRAIN_ME = False
-    model_filename = 'models/lstm_elliptical_predictor.h5'
+    model_filename = 'models/dense_mixed_predictor.h5'
 
-    def __init__(self, inputs=lstmInputPoints, outputs=lstmPredictedPoints):
+    def __init__(self, inputs=_inputPoints, outputs=_predictedPoints):
         super().__init__(inputs, outputs)
         # define model
-        self.model = Sequential()
         # If there is a file, load model from the file
         if os.path.isfile(self.model_filename):
             self.model = load_model(self.model_filename)
         else:
-            # https: // machinelearningmastery.com / stacked - long - short - term - memory - networks /
-            _lstmLayerFactor = 5
-            #self.model.add(LSTM(self.inputPoints * _lstmLayerFactor, return_sequences = True, input_shape=(self.inputPoints, 2)))
-            self.model.add(LSTM(self.inputPoints,
-                                return_sequences=True,
-                                input_shape=(self.inputPoints, 2),
-                                activation = 'tanh')
-                           )
-            self.model.add(LSTM(self.inputPoints,
-                                return_sequences=True,
-                                activation='tanh')
-                           )
+            _layerFactor = 32
+            self.model = Sequential()
+            self.model.add(Dense(self.inputPoints * _layerFactor,
+                                 input_shape=(self.inputPoints, 2),
+                                 activation = 'linear'))
+            self.model.add(Dense(self.inputPoints * _layerFactor,
+                                 activation='relu'))
             self.model.add(Dropout(0.2))
-            self.model.add(TimeDistributed(Dense(output_shape=(self.inputPoints, 2), activation='relu')))
-            self.model.add(Flatten())
-            #self.model.add(Dense(self.outputPoints * 2, activation='linear'))
+            self.model.add(Dense(self.outputPoints * _layerFactor, activation='relu'))
+            self.model.add(Dropout(0.2))
+            self.model.add(Dense(self.outputPoints * 4, activation='relu'))
+            self.model.add(Dropout(0.2))
+            self.model.add(Dense(output_shape=(self.outputPoints, 2), activation='linear'))
+
             self.model.compile(loss='mse',
                                metrics=['accuracy'],
                                optimizer=Adam(clipnorm=1.))
@@ -60,19 +55,16 @@ class LstmEllipticalPredictor(Predictor):
         if self.TRAIN_ME:
             _datasetSize = 5000
             _iterations = 100
-            X, Y = CRG.getCircularTrainingData(_datasetSize, self.inputPoints, self.outputPoints, simulate_acceleration=True)
-            #print("INTIAL xy:\n", X, "\n\n", Y)
+            #X, Y = CRG.getCircularTrainingData(_datasetSize, self.inputPoints, self.outputPoints, simulate_acceleration=True)
+            X, Y = CRG.getLinearTrainingData(_datasetSize*2, self.inputPoints, self.outputPoints, simulate_acceleration=True)
             #Xl, Yl = CRG.getLinearTrainingData(_datasetSize*2, self.inputPoints, self.outputPoints, simulate_acceleration=True)
             #print("INTIAL LL:\n", Xl, "\n\n", Yl)
             #X = np.append(X, Xl, axis=0)
             #Y = np.append(Y, Yl, axis=0)
 
-            #print("DATASET:\n", X, "\n\n", Y)
-            #quit()
             for i in range (0, _iterations):
-                batchSize = 32#max(1, _iterations - int(i / 10) * 10)
+                batchSize = 1
                 print("Iteration ", i, " of ", _iterations, " batch size: ", batchSize)
-                self.test()
                 self.model.fit(X,
                                Y,
                                epochs=10,
@@ -83,6 +75,7 @@ class LstmEllipticalPredictor(Predictor):
                 # save model to single file
                 self.model.save(self.model_filename)
                 self.model.save(self.model_filename + '_bak_' + str(int(i / 100)))
+                self.test()
 
 
     def predict(self, input):
@@ -95,13 +88,13 @@ class LstmEllipticalPredictor(Predictor):
         testInput = nextNPointsOnCircle(Circle(0.5, 0.5, 0.5),
                                         startingAngle=0,
                                         angleStep=0.2618,  # 15 degr
-                                        count=lstmInputPoints + lstmPredictedPoints,
+                                        count=_inputPoints + _predictedPoints,
                                         accelerationRatio=1.0)
         #print("Test input: ", testInput)
         testData = np.array(testInput)
-        testX, testY = testData[:lstmInputPoints], testData[lstmInputPoints:]
-        testX = testX.reshape((1, lstmInputPoints, 2))
-        testY = testY.reshape((1, lstmPredictedPoints * 2))
+        testX, testY = testData[:_inputPoints], testData[_inputPoints:]
+        testX = testX.reshape((1, _inputPoints, 2))
+        testY = testY.reshape((1, _predictedPoints * 2))
         pred = self.predict(testX)
         err = (testY - pred)
         maxErr = abs(max(err.min(), err.max(), key=abs))
@@ -113,11 +106,9 @@ class LstmEllipticalPredictor(Predictor):
         maxErr = abs(max(err.min(), err.max(), key=abs))
         print("Expected linear:\n", testY, "\nPredicted linear:\n", pred,"\nError:\n", (testY - pred), " max Err ", maxErr, "\n\n")
 
-# '''
 if __name__ == '__main__':
-    pred = LstmEllipticalPredictor()
+    pred = DenseMixedPredictor()
     pred.test()
-# '''
 
 
 

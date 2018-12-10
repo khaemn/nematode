@@ -7,8 +7,9 @@ from helpermath import *
 from predictors import *
 from enum import Enum
 from lstm_bilinear_predictor import *
-#from lstm_mouse_predictor import *
+from lstm_mouse_predictor import *
 from lstm_elliptical_predictor import *
+from dense_mixed_predictor import *
 
 import numpy as np
 import json
@@ -98,8 +99,9 @@ class GameEngine(QObject):
     # predictor = LstmLinearPredictor(inputPointsForPredictor, outputPointsForPredictor)
     # predictor = PrimitiveLinearPredictor(inputPointsForPredictor, outputPointsForPredictor)
     # predictor = LstmMousePredictor()
-    predictor = LstmEllipticalPredictor(inputPointsForPredictor, outputPointsForPredictor)
+    # predictor = LstmEllipticalPredictor(inputPointsForPredictor, outputPointsForPredictor)
     # predictor = PrimitiveCircularPredictor(inputPointsForPredictor, outputPointsForPredictor)
+    predictor = DenseMixedPredictor(inputPointsForPredictor, outputPointsForPredictor)
     lastPositions = []
 
     prevPosition = [0.0, 0.0]
