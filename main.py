@@ -6,10 +6,6 @@ from spaceships import *
 from helpermath import *
 from predictors import *
 from enum import Enum
-from lstm_bilinear_predictor import *
-from lstm_mouse_predictor import *
-from lstm_elliptical_predictor import *
-from dense_mixed_predictor import *
 
 import numpy as np
 import json
@@ -68,8 +64,8 @@ class GameEngine(QObject):
                 print('landingZone', self.landingZone, 'launchBay', self.launchBay)
 
 
-    # обязательно даём название аргументу через arguments=['sum']
-    # иначе нельзя будет его забрать в QML
+    # An argument must be declared via 'arguments=['sum']'
+    # otherwise it would be impossible to retrieve it from QML
     # Signals:
     initLaunchBay = pyqtSignal(int, int, int, int, arguments=['_x', '_y', '_width', '_height'])
     initLandingZone = pyqtSignal(int, int, int, int, arguments=['_x', '_y', '_width', '_height'])
@@ -96,12 +92,7 @@ class GameEngine(QObject):
     ship = DebugShip()
 
     # TODO: move to Cannon
-    # predictor = LstmLinearPredictor(inputPointsForPredictor, outputPointsForPredictor)
-    # predictor = PrimitiveLinearPredictor(inputPointsForPredictor, outputPointsForPredictor)
-    # predictor = LstmMousePredictor()
-    # predictor = LstmEllipticalPredictor(inputPointsForPredictor, outputPointsForPredictor)
-    # predictor = PrimitiveCircularPredictor(inputPointsForPredictor, outputPointsForPredictor)
-    predictor = DenseMixedPredictor(inputPointsForPredictor, outputPointsForPredictor)
+    predictor = PrimitiveLinearPredictor(inputPointsForPredictor, outputPointsForPredictor)
     lastPositions = []
 
     prevPosition = [0.0, 0.0]
